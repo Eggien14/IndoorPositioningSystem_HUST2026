@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trilateration Live - Indoor Positioning System</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .lm-layout {
+            display: block;
+        }
+
+        .lm-session-top {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .lm-session-left {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .lm-session-meta {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            flex-wrap: wrap;
+            font-size: 0.86rem;
+            color: var(--text-secondary);
+        }
+
+        #lm-map-wrap {
+            position: relative;
+            display: inline-block;
+            overflow: visible;
+            max-width: 100%;
+        }
+
+        .lm-map-stage {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 520px;
+            overflow: auto;
+        }
+
+        .lm-compass-stage {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 8px;
+        }
+
+        #lm-overlay {
+            position: absolute;
+            left: 0;
+            top: 0;
+            pointer-events: none;
+        }
+
+        .lm-compass {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            min-width: 110px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .lm-compass svg {
+            width: 92px;
+            height: 92px;
+            overflow: visible;
+        }
+
+        .lm-compass-ring {
+            fill: rgba(0, 0, 0, 0.02);
+            stroke: var(--border-color);
+            stroke-width: 2;
+        }
+
+        .lm-compass-needle {
+            stroke: #d14f7f;
+            stroke-width: 3.5;
+            stroke-linecap: round;
+        }
+
+        .lm-compass-label {
+            font-weight: 700;
+            fill: var(--text-primary);
+            font-size: 15px;
+        }
+
+        .lm-device-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 12px;
+            margin: 10px 0 6px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .lm-device-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .lm-device-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .lm-dot {
+            width: 10px;
+            height: 10px;
+            display: inline-block;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        .lm-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .lm-table th,
+        .lm-table td {
+            text-align: left;
+            padding: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .lm-tag-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 12px;
+        }
+
+        .lm-tag-card {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.015);
+        }
+
+        .lm-tag-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .lm-tag-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 0.92rem;
+            padding: 2px 0;
+        }
+
+        .lm-tag-key {
+            color: var(--text-secondary);
+        }
+
+        .countdown-number {
+            font-size: 4rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .celebration-icon {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body data-auth-page="protected">
+    <div class="header">
+        <div class="header-content">
+            <div><h1 class="header-title">Trilateration LM Live</h1></div>
+            <div class="header-controls">
+                <a href="/training-select" class="btn btn-secondary" data-i18n="back">Back</a>
+                <button id="settings-btn" class="btn btn-secondary">Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-panel" class="settings-panel">
+        <div class="settings-header"><h2 data-i18n="settings">Settings</h2><button id="close-settings" class="btn btn-secondary btn-small" data-i18n="close">Close</button></div>
+        <div class="settings-section"><h3 data-i18n="theme">Theme</h3><div id="theme-toggle" class="toggle-switch"></div></div>
+        <div class="settings-section"><h3 data-i18n="language">Language</h3><div class="radio-group"><label class="radio-option"><input type="radio" name="language" value="en" checked><span>English</span></label><label class="radio-option"><input type="radio" name="language" value="vi"><span>Tieng Viet</span></label></div></div>
+        <div class="settings-section"><h3 data-i18n="quickNav">Quick Navigation</h3><div id="settings-quick-nav" class="quick-links"></div><button id="logout-btn" class="btn btn-danger btn-small hidden" data-i18n="logout" style="margin-top: 10px; width: 100%;">Logout</button></div>
+    </div>
+
+    <div class="container">
+        <div id="pre-session-card" class="card mb-20">
+            <div class="lm-session-top">
+                <div class="lm-session-left">
+                    <strong id="live-session-name">Creative</strong>
+                    <span>Elapsed</span>: <span id="live-elapsed">0</span>s
+                    <span>Remaining</span>: <span id="live-remaining">--</span>
+                    <button id="live-start-btn" class="btn btn-success" data-i18n="start">Start</button>
+                    <button id="send-map-btn" class="btn btn-secondary">Send map info</button>
+                </div>
+                <div class="lm-session-meta">
+                    <span id="lm-map-title">Map</span>
+                    <span>Offset: <span id="lm-offset">0</span>°</span>
+                    <span>Updated: <span id="lm-updated">-</span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="lm-compass-stage">
+            <div class="lm-compass" aria-label="Real north compass">
+                <svg viewBox="0 0 100 100" role="img" aria-label="North compass">
+                    <circle class="lm-compass-ring" cx="50" cy="50" r="38"></circle>
+                    <g id="lm-compass-needle" transform="rotate(0 50 50)">
+                        <line class="lm-compass-needle" x1="50" y1="50" x2="50" y2="18"></line>
+                        <polygon points="50,10 44,22 56,22" fill="#d14f7f"></polygon>
+                    </g>
+                    <text class="lm-compass-label" x="50" y="18" text-anchor="middle">N</text>
+                    <text x="50" y="79" text-anchor="middle" fill="var(--text-secondary)" font-size="10">True North</text>
+                </svg>
+                <div id="lm-compass-caption">Map north offset: 0.00°</div>
+            </div>
+        </div>
+
+        <div class="lm-layout">
+            <div class="lm-map-stage">
+                <div id="lm-map-wrap">
+                    <div id="lm-map-grid" class="map-grid"></div>
+                    <svg id="lm-overlay"></svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <h3 style="margin-bottom: 12px;">Device Diagnostics</h3>
+            <div id="lm-diagnostics"></div>
+        </div>
+    </div>
+
+    <div id="countdown-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 260px; text-align: center;">
+            <div style="font-size: 1.1rem; margin-bottom: 10px;">Starting in</div>
+            <div id="countdown-number" class="countdown-number">3</div>
+        </div>
+    </div>
+
+    <div id="finish-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 420px; text-align: center;">
+            <div class="celebration-icon">🎆</div>
+            <h3 style="margin-bottom: 18px;">Training finished</h3>
+            <button id="finish-modal-ok" class="btn btn-primary">OK</button>
+        </div>
+    </div>
+
+    <script src="/static/js/common.js"></script>
+    <script src="/static/js/training_live_trilateration.js"></script>
+</body>
+</html>

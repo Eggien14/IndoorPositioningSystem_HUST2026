@@ -1,0 +1,307 @@
+================================================================================
+ THAM KHẢO & ĐÁNH GIÁ THUẬT TOÁN 2 — UWB TRILATERATION (IPS)
+ (research record cho backend/algorithms/trilateration_LM/)
+================================================================================
+Mục tiêu: định vị 2D (x, y) của tag trong phòng kín từ khoảng cách UWB tới các
+anchor. Tài liệu này tổng hợp nghiên cứu từ NGUỒN UY TÍN (IEEE/MDPI/arXiv/PMC),
+so sánh với model hiện tại (4 file Python), và đề xuất cải tiến. Mọi nhận định
+đều kèm URL thật đã tra cứu (xem mục NGUỒN ở cuối).
+
+--------------------------------------------------------------------------------
+0. RÀNG BUỘC DỮ LIỆU THỰC TẾ (rất quan trọng — quyết định mô hình khả thi)
+--------------------------------------------------------------------------------
+- 4 anchor UWB cố định, biết toạ độ (x, y) — DB bảng `map_beacon` (2D, mét).
+- Mỗi nhịp: ĐÚNG 4 khoảng cách thô (cm), CHƯA lọc. Topic
+  `2/uwb_ranging/<master>/<slave>` (payload `<tag>,<dist_cm>,...`).
+- Môi trường có cả LoS + NLoS + multipath/antenna-delay.
+- *** KHÔNG có CIR, KHÔNG có RSSI/first-path/chỉ số chất lượng từng range,
+  KHÔNG có timestamp từng range. *** => KHÔNG thể phân loại NLoS/LoS bằng CIR.
+  Mọi trọng số (weight) phải suy ra từ CHÍNH các range + residual của chúng
+  (+ hình học anchor). Đây là điểm khác biệt mấu chốt so với "mô hình đề xuất"
+  ban đầu (vốn dùng W thích nghi từ CIR — KHÔNG khả thi với dữ liệu hiện có).
+- Tag CÓ gửi IMU (BNO055: acc/gyro/mag/euler yaw) qua topic `uwb_id/<tag>`
+  => có thể dùng cho PDR/heading nếu cần (độc lập với việc thiếu CIR).
+- Hệ 2D: anchor chỉ có (x,y). Nếu anchor & tag lệch độ cao Δh thì range nghiêng
+  => trilateration 2D có bias hệ thống sqrt(d^2 - Δh^2). Không có z nên không sửa
+  được; ghi nhận như một giả định mô hình (anchor & tag gần đồng phẳng).
+
+--------------------------------------------------------------------------------
+1. KHỞI TẠO DẠNG ĐÓNG — LINEARIZED LEAST SQUARES (LLS)
+--------------------------------------------------------------------------------
+- Mỗi anchor cho 1 phương trình vòng tròn (x-xi)^2+(y-yi)^2 = di^2. Trừ phương
+  trình của 1 anchor tham chiếu cho các phương trình còn lại => khử số hạng bậc
+  hai (x^2+y^2), còn hệ TUYẾN TÍNH theo (x,y): A·p = b, nghiệm đóng
+  p = (A^T A)^-1 A^T b.
+- Ưu: rẻ, không lặp, không cần điểm khởi tạo, KHÔNG phân kỳ.
+  Nhược: tối thiểu hoá sai số đã-biến-đổi-đại-số (không phải residual range thật)
+  => khuếch đại nhiễu, kém chính xác hơn NLS lặp.
+- Best practice phổ biến: LLS để LẤY ĐIỂM KHỞI TẠO, rồi tinh chỉnh bằng NLS lặp
+  (Taylor/Gauss-Newton/LM). [TH-Lübeck TR-2-2015]
+- Khả thi (không CIR): CÓ — chỉ cần range + toạ độ anchor.
+
+--------------------------------------------------------------------------------
+2. SOLVER LẶP — GAUSS-NEWTON / TAYLOR vs LEVENBERG-MARQUARDT (LM)
+--------------------------------------------------------------------------------
+- Taylor-series (Foy 1976) ≈ Gauss-Newton: khai triển Taylor bậc 1 quanh ước
+  lượng hiện tại, giải lặp. Cần điểm khởi tạo tốt; có thể PHÂN KỲ nếu hình học
+  xấu / khởi tạo tệ.
+- Độ chính xác vị trí ≈ sai số range × GDOP. Hình học xấu (anchor gần thẳng
+  hàng, GDOP lớn) làm ma trận chuẩn J^T J GẦN SUY BIẾN => bước Gauss-Newton vọt
+  /phân kỳ.
+- LM ("damped least squares"): giải (J^T J + λI)·δ = J^T·r. Số hạng λI làm hệ
+  xác định dương + GIỚI HẠN bước. Nội suy: λ nhỏ -> Gauss-Newton (nhanh khi gần
+  nghiệm); λ lớn -> gradient descent (bước nhỏ an toàn khi xa). => LM cho ROBUST
+  đúng vùng gần-suy-biến/xa-nghiệm, và suy biến về GN khi hình học tốt (không mất
+  mát). Biến thể Marquardt thay I bằng diag(J^T J) cho bất biến tỉ lệ.
+- Chiến lược damping CHUẨN (adaptive): nhận bước & GIẢM λ nếu cost giảm; loại bước
+  & TĂNG λ nếu cost tăng (theo gain-ratio ρ). [Wikipedia LM; Gavin Duke; Marquardt 1963]
+- Khả thi (không CIR): CÓ. Lõi LM là lựa chọn chuẩn-sách-giáo-khoa cho hình học
+  4-anchor.
+
+--------------------------------------------------------------------------------
+3. WLS + GIẢM NLoS KHÔNG CẦN CIR (mấu chốt)
+--------------------------------------------------------------------------------
+3a. Trọng số từ RESIDUAL + Mahalanobis (không cần CIR): mẫu WLS-RKF [Fan&Du 2022]
+    - Mỗi anchor: 1 Kalman vô hướng lọc range; thống kê Mahalanobis trên residual
+      đã lọc: γi = (ri-di)^T (H P H^T + R)^-1 (ri-di) ~ χ²₁; so với ngưỡng
+      χ²₁,0.001 = 6.2; trọng số wi = sqrt(χ²₁,α / γi) cho NLoS, wi=1 cho LoS
+      (residual lớn -> weight nhỏ). Testbed DW1000 4-anchor: giảm RMS >90% so với
+      LS thuần. Yêu cầu: >=4 anchor và >=2 đo LoS để định vị 2D tin cậy.
+    - Tuyên bố rõ trong abstract: KHÔNG cần biết phân bố NLoS hay "signal features".
+3b. M-estimator robust (IRLS): lặp đặt lại trọng số theo residual với hàm chi phí
+    Huber/Cauchy/Tukey/Geman-McClure. Huber: wi=1 nếu |res|<=δ, ngược lại
+    wi=δ/|res|. Tukey/Geman-McClure là "redescending" (đẩy weight outlier về ~0,
+    mạnh hơn nhưng cần seed tốt). [Wang 2025; AlHajri 2018 — lưu ý AlHajri là RSS,
+    chỉ trích cơ chế IRLS]. => Đây là nâng cấp RỦI RO THẤP NHẤT: nhúng IRLS-Huber
+    vào ngay vòng lặp LM hiện có.
+3c. Residual-weighting trên TẬP CON anchor (Rwgh) — phương pháp NLoS không-CIR
+    kinh điển: với mỗi tổ hợp anchor, tính 1 vị trí, chấm điểm bằng residual range
+    bình phương trung bình, rồi tổ hợp theo NGHỊCH ĐẢO residual. Chỉ dùng range,
+    không CIR. [Li 2023 PMC9920415; PMC12241587]: cần >=3 anchor cho fix 2D; nếu
+    <4 anchor hợp lệ sau loại trừ -> fallback LS thuần; >=4 mới chạy residual-
+    weighting.
+3d. TRẦN DƯ THỪA CỦA 4 ANCHOR (giới hạn cơ bản, không phải tuning): fix 2D cần 3
+    range. Có 4 anchor, bỏ 1 anchor xấu còn đúng 3 -> fit duy nhất NHƯNG hết dư
+    thừa để kiểm chứng. => 3-of-4 chỉ loại được TỐI ĐA 1 anchor NLoS, và chỉ khi 3
+    anchor còn lại sạch; nếu >=2 range bị bias thì không phương pháp residual/RANSAC
+    nào trên 4 range cứu được. Trùng với quy tắc ">=2 LoS" ở 3a.
+- Khả thi (không CIR): 3a–3c đều khả thi từ range+residual. 3b dễ làm nhất. Trần
+  4-anchor (3d) là giới hạn vật lý, cần chấp nhận.
+
+--------------------------------------------------------------------------------
+4. TIỀN LỌC RANGE THÔ — Kalman từng anchor & cạm bẫy "clamp về prediction"
+--------------------------------------------------------------------------------
+- Chuẩn: Kalman 1D mỗi anchor (đôi khi kèm median filter) trước trilateration.
+  CV vs random-walk cho 1 range: random-walk mượt nhất nhưng TRỄ khi tag di
+  chuyển (innovation lệch một phía kéo dài); CV [range, range-rate] bám chuyển
+  động đều nhưng vọt/trễ khi đổi tốc/đảo chiều. Núm chỉnh thực sự là tỉ lệ Q/R.
+- Loại outlier ĐÚNG cách (Bar-Shalom): tính NIS d² = ν^T S^-1 ν (~χ²); nếu vượt
+  ngưỡng -> (a) BỎ QUA update, hoặc (b) PHÌNH R (R' = (γ/χ²_thr)·R). KHÔNG bịa
+  dữ liệu. [PMC6210645]
+- *** CẠM BẪY "clamp về prediction" (đúng lỗi trong code hiện tại) ***: thay range
+  ngoài-gate bằng CHÍNH prediction của filter rồi nạp lại như một measurement là
+  ANTIPATTERN: (i) tiêm "measurement" giả không có thông tin độc lập, innovation ~0
+  -> filter tưởng được xác nhận -> CO covariance -> QUÁ TỰ TIN [arXiv:2407.05717];
+  (ii) sau đó Kalman gain nhỏ -> BỎ QUA các measurement thật về sau, không tự sửa
+  -> mất bám/instability (chế độ positive-feedback) [US Patent 6,900,760]. Hành
+  động ĐÚNG là gate Mahalanobis -> phình R / bỏ update [PMC6210645].
+- Khả thi (không CIR): CÓ. => SỬA: bỏ "clamp về prediction", chuyển sang skip-update
+  hoặc phình R. Đây là lỗi đúng-sai phổ biến nhất của loại pipeline này.
+
+--------------------------------------------------------------------------------
+5. LỌC MƯỢT VỊ TRÍ CUỐI — và có cần EKF không?
+--------------------------------------------------------------------------------
+- KẾT QUẢ KIẾN TRÚC (đã kiểm chứng trực tiếp):
+  * Loosely-coupled = KF TUYẾN TÍNH, KHÔNG cần EKF. Chạy LS/trilateration trước ra
+    (x,y), rồi nạp CHÍNH vị trí đó làm measurement vào Kalman thường. Vì z đã là vị
+    trí, H tuyến tính => KF tuyến tính là đủ. [PMC9082075]
+  * Tightly-coupled = cần EKF: nạp range thô vào filter, h(x)=sqrt((px-ax)^2+
+    (py-ay)^2) phi tuyến -> cần Jacobian H -> EKF. Chính xác hơn (dùng đo thô,
+    không mất thông tin), còn định vị được khi <3 anchor, nhưng phức tạp hơn.
+    [PMC10346922]
+- CV vs random-walk ở mức vị trí: mô hình CV (white-noise-acceleration)
+  [x,y,vx,vy] là baseline chuẩn cho người đi bộ; cho velocity smoothing miễn phí,
+  cần Q hợp dynamics (quá nhỏ -> trễ khi rẽ; quá lớn -> kém mượt). Random-walk
+  [x,y] là mức tối thiểu (≈ EMA vị trí). [arXiv:2005.00844]
+- Adaptive KF: ước lượng R/Q theo innovation (IAE/Sage-Husa) chuẩn cho UWB, đặc
+  biệt giúp khi NLoS. Dạng robust-adaptive-R = gate Mahalanobis -> phình R
+  [PMC6210645]. [Wiley dac.70127]
+- Khả thi (không CIR): CÓ. Vì ta đã chuyển range->vị trí bằng LS, một CV Kalman
+  TUYẾN TÍNH là smoother cuối ĐÚNG và ĐỦ — KHÔNG cần EKF ở mức vị trí. (Để dành EKF
+  cho thiết kế tightly-coupled trên range thô nếu muốn nâng cấp sau.)
+
+--------------------------------------------------------------------------------
+6. UWB + PDR/IMU FUSION
+--------------------------------------------------------------------------------
+- Loosely-coupled UWB+IMU giúp ở 2 chỗ: (1) chặn spike NLoS (dùng IMU ngắn-hạn-
+  chính-xác để gate/loại fix UWB vi phạm test 3σ); (2) bắc cầu khi UWB rớt + chặn
+  drift PDR. Số liệu [Feng 2022 foot-mounted ILCKF]: NLoS 0.52->0.24 m RMS (~53%);
+  LoS+NLoS 0.46->0.29 m (~34%); đuôi 95% fused 0.45 m vs IMU-only 1.63 m.
+- Có đáng với 4 anchor phủ liên tục? Lợi ích fusion tập trung ở NLoS & rớt tín
+  hiệu. Khi 4 anchor LoS liên tục, sai số/mẫu đã ~0.1–0.3 m -> lợi ích biên co lại
+  còn smoothing (suy luận, không phải claim có nguồn). => IMU vẫn đáng để lấy
+  HEADING + làm cổng NLoS + bắc cầu ngắn; KHÔNG bắt buộc cho phủ sóng cơ bản.
+- Khả thi (không CIR): CÓ & độc lập CIR. Loosely-coupled (nạp vị trí LS + chuyển
+  động IMU vào cùng KF) là lựa chọn thực dụng; IMU cũng kiêm cổng loại outlier.
+
+--------------------------------------------------------------------------------
+7. ĐỘ CHÍNH XÁC & σ RANGE ĐIỂN HÌNH (để đặt R)
+--------------------------------------------------------------------------------
+- LoS: ~10 cm (DW1000 TWR/TOF ±10 cm) [arXiv:2005.10648]; tốt nhất cm-level
+  [PMC10304790].
+- NLoS bias = decimet-tới-mét, lớn hơn nhiều so với nhiễu; range đọc DÀI hơn thật,
+  bias tới ~1.5 m [Fan&Du].
+- σ range để đặt R: bench/LoS sạch σ≈1–3 cm (Fan&Du: σ=0.02 m -> R≈4e-4 m²);
+  thực tế/đeo người LoS σ≈0.2 m (an toàn hơn). Thực dụng: đặt R LoS từ σ≈0.05–0.2 m,
+  xử lý NLoS bằng gate/phình R (không phải 1 R cố định).
+
+--------------------------------------------------------------------------------
+8. ĐÁNH GIÁ MODEL HIỆN TẠI (4 file) — ĐỐI CHIẾU
+--------------------------------------------------------------------------------
+Lõi LLS->LM của ta về cơ bản đúng hướng sách giáo khoa, nhưng còn các điểm:
+
+[engine.py] solve_trilateration_lm
+  + Đúng: damped Gauss-Newton (kiểu LM), residual range thật, 12 iter.
+  - Khởi tạo = CENTROID anchor (không phải LLS). Đề xuất: thêm LLS closed-form làm
+    seed (mục 1) -> hội tụ tốt hơn + có fallback.
+  - Damping CỐ ĐỊNH λ=1e-2 -> thực chất là damped-GN, KHÔNG phải LM thật (tên gọi
+    "LM" chưa đúng). Đề xuất: λ ADAPTIVE theo gain-ratio (mục 2).
+  - KHÔNG có trọng số (LS thuần, không WLS/robust). Với NLoS, range bias làm hỏng
+    fix. Đề xuất: IRLS-Huber trong vòng lặp (mục 3b) + (tuỳ chọn) WLS từ Mahalanobis
+    residual (3a).
+  - KHÔNG trả covariance P=(J^T W J)^-1. Đề xuất: trả P để nạp cho KF vị trí (mục 5).
+
+[distance_kalman.py] ScalarKalmanDistanceFilter / Bank
+  - *** LỖI QUAN TRỌNG ***: innovation gate đang CLAMP measurement về prediction khi
+    |z - x^-| > 0.9 m (dòng `measurement = predicted_estimate`). Đây đúng là
+    antipattern ở mục 4: vừa làm filter QUÁ TỰ TIN vừa khiến nó BỎ QUA chuyển động
+    thật / spike -> dính/trễ. Đề xuất: đổi sang BỎ QUA update (hoặc phình R) khi
+    NIS vượt ngưỡng χ².
+  - Mô hình random-walk (constant-position) -> trễ khi tag di chuyển. Tuỳ chọn:
+    CV [d, ḋ] nếu tag di chuyển đều. Ngưỡng gate 0.9 m là số đặt tay, nên dùng NIS
+    theo χ² thay vì ngưỡng mét cố định.
+  - Q/R hiện là số đoán (Q=0.02, R=0.25 ở bank; R=0.0001 ở filter đơn — KHÔNG nhất
+    quán). Nên calib từ dữ liệu UWB tĩnh thật khi có (chưa có dataset thật, chỉ có
+    test/uwb/uwb_fakedata_test.py).
+
+[positioning.py] TrilaterationPositioning + KalmanFilter2D
+  - KalmanFilter2D là random-walk (không velocity) -> trễ mục tiêu di chuyển. Đề
+    xuất: nâng lên CV KF tuyến tính [x,y,vx,vy] (mục 5), KHÔNG cần EKF.
+  - clamp range [0.10, 15.0] m: hợp lý cho phòng; để cấu hình được.
+  - Chưa dùng covariance từ solver để đặt R thích nghi.
+
+[user_state.py] — parser IMU/valve/button: ổn, giữ nguyên (dùng chung cho cả 2 & 3).
+
+KẾT LUẬN: kiến trúc tổng thể (lọc range -> LS hình học -> lọc vị trí) là ĐÚNG và
+khớp best practice. Cần sửa: (1) bỏ clamp-về-prediction [BẮT BUỘC], (2) thêm LLS
+seed + LM adaptive λ + trọng số robust (IRLS-Huber/WLS-Mahalanobis), (3) KF vị trí
+CV (tuyến tính), (4) trả & dùng covariance P, (5) calib tham số từ dữ liệu thật khi
+có. "Mô hình đề xuất" 3 bước của bạn ĐÚNG về tư tưởng, CHỈ phần W-từ-CIR là KHÔNG
+khả thi (thiếu CIR) -> thay bằng W-từ-residual (Mahalanobis/IRLS).
+
+--------------------------------------------------------------------------------
+9. PIPELINE ĐỀ XUẤT (khả thi từ 4 range thô + toạ độ anchor + IMU tuỳ chọn)
+--------------------------------------------------------------------------------
+1) Tiền lọc range/anchor: Kalman vô hướng mỗi anchor; gate bằng NIS/Mahalanobis vs
+   χ²₁ (~6.2 @ α=0.001); fail -> BỎ update hoặc phình R (KHÔNG clamp về prediction).
+2) Khởi tạo: LLS đóng (trừ anchor tham chiếu -> A·p=b). Seed không phân kỳ.
+3) Tinh chỉnh: LM damped từ seed LLS; λ adaptive (gain-ratio) chống GDOP xấu.
+4) Robust: IRLS-Huber theo residual trong vòng LM (+ tuỳ chọn WLS từ Mahalanobis
+   residual; + tuỳ chọn Rwgh 3-of-4 để loại 1 anchor NLoS). Chấp nhận trần 4-anchor.
+5) Mượt cuối: CV Kalman TUYẾN TÍNH trên (x,y) (loosely-coupled, không EKF); R có
+   thể adaptive theo innovation.
+6) (Tuỳ chọn) IMU/PDR loosely-coupled vào cùng CV-KF: heading + bắc cầu rớt + cổng
+   NLoS. Đáng nếu hay NLoS/rớt; biên nếu 4 anchor LoS liên tục.
+7) Tuning: R LoS từ σ≈0.05–0.2 m; để dành EKF tightly-coupled (trên range thô) làm
+   nâng cấp tương lai nếu dư thừa 4-anchor quá mỏng.
+
+--------------------------------------------------------------------------------
+10. NGUỒN (URL thật, đã tra cứu)
+--------------------------------------------------------------------------------
+[1] Fan & Du, "NLOS Error Mitigation Using WLS and Kalman Filter in UWB
+    Positioning", arXiv:2205.05939 — WLS weight từ Mahalanobis residual, KHÔNG CIR,
+    σ=0.02 m, bias NLoS ≤1.5 m, cần >=4 anchor / >=2 LoS.
+    https://arxiv.org/abs/2205.05939
+[2] "Robust & Adaptive Complementary KF (Mahalanobis) for UWB/IMU", Sensors,
+    PMC6210645 — gate χ² -> phình R (đúng cách).
+    https://pmc.ncbi.nlm.nih.gov/articles/PMC6210645/
+[3] "An Improved UWB/IMU Tightly Coupled Positioning Algorithm", PMC10346922 —
+    range thô -> cần Jacobian -> EKF (tight vs loose).
+    https://pmc.ncbi.nlm.nih.gov/articles/PMC10346922/
+[4] "A Loosely Coupled EKF for Multi-Sensor Fusion", PMC9082075 — loosely-coupled =
+    module hoá, vị-trí-làm-measurement -> KF tuyến tính.
+    https://pmc.ncbi.nlm.nih.gov/articles/PMC9082075/
+[5] Li et al., "UWB Indoor Positioning Based on TOF + Residual Weighting", Sensors,
+    PMC9920415 — Rwgh tổ hợp tập con, chỉ TOF, không CIR.
+    https://pmc.ncbi.nlm.nih.gov/articles/PMC9920415/
+[6] "UWB error suppression via residual weighting", Sci. Reports, PMC12241587 —
+    >=3 cho 2D / >=4 cho residual-weighting; fallback LS.
+    https://pmc.ncbi.nlm.nih.gov/articles/PMC12241587/
+[7] Feng et al., "Low-Cost Foot-Placed UWB+IMU Fusion Indoor Tracking", Sensors
+    2022, PMC9657577 — số liệu fusion (0.52->0.24 m NLoS; đuôi 1.63->0.45 m).
+    https://pmc.ncbi.nlm.nih.gov/articles/PMC9657577/
+[8] TH-Lübeck TR-2-2015, "Position Calculation with Least Squares (ToA)" — đạo hàm
+    LLS p=(A^T A)^-1 A^T b + LLS-vs-NLS.
+    https://www.th-luebeck.de/fileadmin/media_cosa/Dateien/Veroeffentlichungen/Sammlung/TR-2-2015-least-sqaures-with-ToA.pdf
+[9] Wikipedia, "Levenberg–Marquardt algorithm" — damping, GN<->gradient, ill-cond.
+    https://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
+[10] Gavin H.P. (Duke), "The Levenberg-Marquardt algorithm for nonlinear least
+     squares" — dạng có trọng số (J^T W J + λI)h = J^T W (y-ŷ).
+     https://people.duke.edu/~hpgavin/ce281/lm.pdf
+[11] Marquardt (1963), J. SIAM 11:431–441 — thuật toán LM gốc.
+[12] Foy (1976), "Position-Location Solutions by Taylor-Series Estimation", IEEE
+     TAES 12(2):187–194 — Taylor/Gauss-Newton kinh điển (metadata, paywall).
+[13] Cao et al., arXiv:2005.10648 — DW1000 ±10 cm LoS; σ≈0.2 m thực tế.
+     https://arxiv.org/abs/2005.10648
+[14] arXiv:2407.05717 — overconfidence trong nonlinear KF (cơ chế co covariance).
+     https://arxiv.org/abs/2407.05717
+[15] US Patent 6,900,760 — positive-feedback khi nạp giá trị filter làm measurement.
+     https://patents.google.com/patent/US6900760
+[16] Constant-velocity motion model (NCV), arXiv:2005.00844.
+     https://arxiv.org/pdf/2005.00844
+[17] AlHajri et al., arXiv:1806.05765 — IRLS/Huber M-estimator (RSS, chỉ trích cơ chế).
+     https://arxiv.org/abs/1806.05765
+
+GHI CHÚ TRUNG THỰC (chưa kiểm chứng tuyệt đối):
+- Tên "clamp-to-prediction pitfall" là folklore kỹ thuật; CƠ CHẾ có nguồn [14][15],
+  tên gọi thì không có 1 paper duy nhất.
+- Công thức "3-of-4 RANSAC" chính xác: không tìm thấy verbatim; trần dư thừa suy ra
+  từ ">=2 LoS" [1] và ">=4 anchor" [6].
+- "Fusion ít lợi khi LoS liên tục": suy luận, không phải claim có nguồn.
+- Một số nguồn chỉ xem được abstract/metadata (paywall): [11][12], Wiley dac.70127,
+  MDPI Electronics 12(7):1678.
+
+--------------------------------------------------------------------------------
+11. QUYẾT ĐỊNH TRIỂN KHAI (chốt với người dùng)
+--------------------------------------------------------------------------------
+Làm SONG SONG hai thuật toán trilateration UWB (đều UWB-only, KHÔNG fuse IMU/PDR):
+
+- THUẬT TOÁN 2 = Loosely-coupled (cải tiến mô hình hiện tại), giữ trong
+  `backend/algorithms/trilateration_LM/` + file chủ `backend/algorithm_2.py`.
+  Pipeline: Kalman range/anchor (BỎ clamp-về-prediction -> gate χ²/phình R) ->
+  LLS seed -> LM (λ adaptive) + ROBUST WEIGHTING [IRLS-Huber + WLS-Mahalanobis,
+  tuỳ chọn loại 1 anchor NLoS kiểu 3-of-4] -> KF vị trí CV tuyến tính (trả & dùng
+  covariance P).
+
+- THUẬT TOÁN 5 = Tightly-coupled EKF (mô hình thứ 2 đề xuất) — MỚI. Tạo folder
+  `backend/algorithms/trilateration_ekf/` (đề xuất tên) + file chủ
+  `backend/algorithm_5.py`. Nạp thẳng 4 range thô vào 1 EKF: state [x,y,vx,vy]
+  (CV), measurement h(x)=||p-anchor|| với Jacobian range, gate Mahalanobis robust;
+  chạy được cả khi <3 anchor. Cũng KHÔNG fuse IMU.
+
+- Tên hiển thị (đề xuất, cùng tiền tố "Trilateration:"):
+  * 2: "Trilateration: Robust LM (loosely-coupled)"
+  * 5: "Trilateration: Tightly-coupled EKF"
+  (Chốt lại ở đầu chat triển khai; ảnh hưởng ALGORITHM_NAMES + validate enable
+  algo 5 = UWB giống algo 2: >=3 UWB gồm 1 master; kiểm ràng buộc map_algorithm
+  có giới hạn algorithm<=4 không.)
+
+- Trọng số NLoS: KẾT HỢP IRLS-Huber + WLS-Mahalanobis (+ tuỳ chọn 3-of-4).
+- IMU/PDR: KHÔNG dùng (UWB-only) cho cả 2 & 5.
+- Phạm vi: chat này = research + reference_tri_lm.txt (XONG). Chat sau = code thuật toán
+  (engine + algorithm_2.py + folder/algorithm_5.py) + verify. Chat cuối = build lại
+  web realtime (clone trang algo 3, đổi backend sang định vị UWB), thêm trang cho
+  algo 5.
+- LƯU Ý: chưa có dataset UWB thật -> tham số đặt theo literature (σ_LoS≈0.05–0.2m),
+  calib lại khi có log đo thật.
+================================================================================

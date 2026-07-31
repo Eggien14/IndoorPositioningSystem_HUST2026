@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rickroll - Indoor Positioning System</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body data-auth-page="protected">
+    <div class="header">
+        <div class="header-content">
+            <div><h1 class="header-title">Rickroll</h1></div>
+            <div class="header-controls"><a href="/home" class="btn btn-secondary" data-i18n="back">Back</a><button id="settings-btn" class="btn btn-secondary">Settings</button></div>
+        </div>
+    </div>
+
+    <div id="settings-panel" class="settings-panel">
+        <div class="settings-header"><h2 data-i18n="settings">Settings</h2><button id="close-settings" class="btn btn-secondary btn-small" data-i18n="close">Close</button></div>
+        <div class="settings-section"><h3 data-i18n="theme">Theme</h3><div id="theme-toggle" class="toggle-switch"></div></div>
+        <div class="settings-section"><h3 data-i18n="language">Language</h3><div class="radio-group"><label class="radio-option"><input type="radio" name="language" value="en" checked><span>English</span></label><label class="radio-option"><input type="radio" name="language" value="vi"><span>Tieng Viet</span></label></div></div>
+        <div class="settings-section"><h3 data-i18n="quickNav">Quick Navigation</h3><div id="settings-quick-nav" class="quick-links"></div><button id="logout-btn" class="btn btn-danger btn-small hidden" data-i18n="logout" style="margin-top: 10px; width: 100%;">Logout</button></div>
+    </div>
+
+    <div class="container">
+        <div class="card text-center">
+            <h2>Never gonna give you up.</h2>
+            <p style="color: var(--text-secondary);">Admin test page.</p>
+        </div>
+    </div>
+
+    <script src="/static/js/common.js"></script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+================================================================================
+ THAM KHẢO & ĐÁNH GIÁ THUẬT TOÁN 1 — RSSI FINGERPRINTS (CNN / Dense) (IPS)
+ (research record cho backend/algorithms/fingerprints_CNN/)
+================================================================================
+Mục tiêu: định vị người dùng trong nhà bằng "vân tay tín hiệu" (RSSI fingerprint) — coi mỗi
+ô khảo sát là một LỚP, dùng mạng học sâu phân loại RSSI -> ô -> tra toạ độ ô. Tài liệu này
+mô tả PHẦN CNN/FINGERPRINT của SERVER KỲ TRƯỚC (đã chạy thật, dự án Django ở
+`Source/Server/config/` — chỉ tham khảo, KHÔNG import), bỏ qua PDR và Kalman filter của
+server cũ. Bản dev đọc kèm: backend/algorithms/fingerprints_CNN/READ_ME_cnn.md.
+
+--------------------------------------------------------------------------------
+0. RÀNG BUỘC DỮ LIỆU (theo server cũ)
+--------------------------------------------------------------------------------
+- Đầu vào: 4 giá trị RSSI (rssi1..rssi4) cho mỗi mẫu. (Server cũ chỉ dùng 4 kênh.)
+- Nhãn: `location` = chỉ số ô khảo sát (đánh số từ 1). Số lớp = `map.total_units`.
+- Mỗi `location` có toạ độ thật (axis_x, axis_y) trong bảng `RSSI_for_Training`.
+- Định vị RỜI RẠC: kết quả là một ô (toạ độ tâm/đại diện ô), không phải toạ độ liên tục.
+- Không có nhãn toạ độ liên tục để hồi quy (khác cách tiếp cận của thuật toán 3).
+
+--------------------------------------------------------------------------------
+1. VÌ SAO FINGERPRINT (phân loại) — bối cảnh
+--------------------------------------------------------------------------------
+- Fingerprinting RSSI là hướng kinh điển cho định vị trong nhà khi môi trường nhiều
+  vật cản/đa đường: thay vì mô hình truyền sóng (dễ sai do multipath), ta KHẢO SÁT trước
+  bản đồ RSSI ("radio map") rồi so khớp lúc chạy.
+- Hai cách dùng radio map: (a) so khớp lân cận (kNN trên RSSI), (b) học mô hình phân
+  loại/hồi quy (NN/CNN). Server cũ chọn (b) dạng PHÂN LOẠI lớp = ô.
+- CNN giúp khai thác tương quan KHÔNG-GIAN/THỜI-GIAN của RSSI (cửa sổ nhiều mẫu nhiều
+  kênh) tốt hơn một mẫu rời rạc -> giảm nhiễu RSSI.
+
+--------------------------------------------------------------------------------
+2. KIẾN TRÚC ĐỀ XUẤT (CNN thật — bản gốc, hiện đang comment trong ml_model.py)
+--------------------------------------------------------------------------------
+- Tiền xử lý: gom RSSI theo CỬA SỔ 10 mẫu liên tiếp; lọc từng RSSI bằng WBOFilter trong
+  cửa sổ; reshape thành tensor (4, 10, 1):
+    * 4 hàng  = 4 kênh RSSI
+    * 10 cột  = 10 mẫu liên tiếp theo thời gian
+    * 1       = channel dimension cho Conv2D
+- Mạng:
+    Conv2D(16,(3,3),relu) -> BatchNormalization
+    -> Conv2D(32,(2,2),relu) -> Conv2D(32,(1,1),relu) -> Conv2D(64,(1,1),relu)
+    -> Flatten -> Dense(256,relu) -> Dropout(0.3) -> Dense(128,relu) -> Dense(128,relu)
+    -> Dense(num_classes, softmax)
+- Train (bản CNN): Adam + ExponentialDecay, EarlyStopping(patience=15), one-hot label,
+  chuẩn hoá min-max toàn cục, lưu CSV tiền xử lý `rssi_data/rssi_preprocess.csv`.
+- Ý tưởng: cửa sổ 10 mẫu + WBO filter -> RSSI ổn định hơn -> phân loại ô chính xác hơn.
+
+--------------------------------------------------------------------------------
+3. KIẾN TRÚC HIỆN TẠI (bản ĐANG CHẠY ở server cũ — Dense feedforward)
+--------------------------------------------------------------------------------
+- Input: vector 4 chiều [rssi1, rssi2, rssi3, rssi4] (MỘT mẫu, KHÔNG cửa sổ, KHÔNG WBO).
+- Mạng (class vẫn tên `feedforward` nhưng KHÔNG còn Conv2D):
+    Dense(512,relu) -> Dropout(0.3) -> Dense(512,relu) -> Dropout(0.3)
+    -> Dense(256,relu) -> Dropout(0.2) -> Dense(128,relu) -> Dropout(0.1)
+    -> Dense(128,relu) -> Dense(num_classes, softmax)
+- Tiền xử lý (standardize_data): shuffle; tách X=[rssi1..4], y=[location]; chuẩn hoá
+  min-max TỪNG CỘT RSSI (lưu min/max để chuẩn hoá realtime); one-hot label.
+- Train: epochs=200, batch_size=32, validation_split=0.2, loss categorical_crossentropy,
+  Adam + ExponentialDecay(lr0=1e-3, decay_steps=8000, decay_rate=0.96).
+- Predict realtime (monitoring.py): load model.keras + min/max -> lấy 4 RSSI từ MQTT ->
+  chuẩn hoá -> predict -> label = argmax + 1 -> tra (axis_x, axis_y) của ô -> cập nhật.
+- Khác biệt so với bản đề xuất: BỎ cửa sổ thời gian + BỎ WBO filter + thay CNN bằng Dense.
+  Đơn giản hơn nhưng kém khai thác tương quan thời gian, nhạy nhiễu RSSI hơn.
+
+--------------------------------------------------------------------------------
+4. KẾT QUẢ
+--------------------------------------------------------------------------------
+- Server cũ trả về `accuracy` / `val_accuracy` cuối cùng của quá trình train về frontend
+  (không cố định trong tài liệu — phụ thuộc dữ liệu khảo sát từng map). README server cũ
+  KHÔNG ghi một con số chuẩn cụ thể, và theo yêu cầu KHÔNG đưa kết quả/schema của các
+  file testdata mới vào đây.
+- Bản chất đánh giá là ĐỘ CHÍNH XÁC PHÂN LOẠI Ô (top-1 location), không phải sai số mét;
+  muốn quy ra mét cần map nhãn -> (axis_x, axis_y) rồi tính khoảng cách tới ô thật.
+
+--------------------------------------------------------------------------------
+5. ĐÁNH GIÁ & HƯỚNG TRIỂN KHAI LẠI (server mới)
+--------------------------------------------------------------------------------
+- Thư mục `backend/algorithms/fingerprints_CNN/` ở server MỚI hiện trống (placeholder) —
+  thuật toán 1 CHƯA được triển khai lại.
+- Khi làm lại nên: (a) dùng schema fingerprint mới (`fingerprint_data`: wifi×4 + ble×4,
+  + IMU) thay vì 4 RSSI; (b) áp dải RSSI hợp lệ [-99,-1] (đồng bộ algo 3); (c) cân nhắc
+  quay lại CNN cửa sổ thời gian (giảm nhiễu) thay vì Dense một mẫu; (d) thống nhất stack
+  PyTorch như algo 3 (server cũ dùng Keras).
+- Có thể tận dụng pipeline/temporal-split + lọc RSSI của khối Transformer (algo 3) cho
+  fingerprint CNN để tránh rò rỉ dữ liệu khi đánh giá.
+
+--------------------------------------------------------------------------------
+6. NGUỒN
+--------------------------------------------------------------------------------
+- NGUỒN CHÍNH (ground truth của tài liệu này): mã server kỳ trước
+  `Source/Server/config/target_tracking/ml_model.py` (+ `wbo_filter.py`, `monitoring.py`,
+  `models.py`) và ghi chú `Source/Server/config/READ_ME_CNN.md`.
+- Literature kinh điển về RSSI fingerprinting / deep learning (tên + venue, để định
+  hướng — CHƯA tái kiểm chứng URL trong tài liệu này):
+  [a] Bahl & Padmanabhan, "RADAR: An In-Building RF-based User Location and Tracking
+      System", IEEE INFOCOM 2000 — nền tảng fingerprinting RSSI (radio map + kNN).
+  [b] Xiao et al., "DeepFi / CSI-based deep learning indoor localization" — hướng DL cho
+      fingerprint (CSI/RSSI).
+  [c] Song et al., "CNNLoc: A ConvNet for WiFi fingerprint indoor localization" — CNN cho
+      fingerprint.
+  (Mức tên/venue là chính xác theo hiểu biết chung; nếu đưa vào báo cáo nên trích dẫn lại
+  bản gốc và kiểm tra URL/DOI.)
+
+GHI CHÚ TRUNG THỰC:
+- Tài liệu này MÔ TẢ server cũ, không phải một research record mới như reference của
+  thuật toán 2/3/5. Các con số kiến trúc/tham số lấy trực tiếp từ code server cũ.
+- Phần literature [a][b][c] chỉ nêu định hướng; chưa tra cứu lại URL trong phiên này.
+================================================================================

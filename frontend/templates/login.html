@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Indoor Positioning System</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body data-auth-page="login">
+    <div class="header">
+        <div class="header-content">
+            <div>
+                <h1 class="header-title" data-i18n="app.title">Indoor Positioning System</h1>
+                <p style="color: var(--text-secondary); font-size: 0.9rem;" data-i18n="app.subtitle">Map Management & Data Collection</p>
+            </div>
+            <div class="header-controls">
+                <button id="settings-btn" class="btn btn-secondary">Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-panel" class="settings-panel">
+        <div class="settings-header">
+            <h2 data-i18n="settings">Settings</h2>
+            <button id="close-settings" class="btn btn-secondary btn-small" data-i18n="close">Close</button>
+        </div>
+
+        <div class="settings-section">
+            <h3 data-i18n="theme">Theme</h3>
+            <div id="theme-toggle" class="toggle-switch"></div>
+        </div>
+
+        <div class="settings-section">
+            <h3 data-i18n="language">Language</h3>
+            <div class="radio-group">
+                <label class="radio-option">
+                    <input type="radio" name="language" value="en" checked>
+                    <span>English</span>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="language" value="vi">
+                    <span>Tieng Viet</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="container login-shell">
+        <div class="login-card">
+            <h2 class="mb-20" data-i18n="login.title">Login</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label class="form-label" data-i18n="login.username">Username</label>
+                    <input id="username" class="form-input" data-i18n-placeholder="login.username" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" data-i18n="login.password">Password</label>
+                    <input id="password" type="password" class="form-input" data-i18n-placeholder="login.password" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;" data-i18n="login.submit">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/common.js"></script>
+    <script src="/static/js/login.js"></script>
+</body>
+</html>

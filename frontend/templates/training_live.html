@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realtime Training - Indoor Positioning System</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .countdown-number {
+            font-size: 4rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .celebration-icon {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body data-auth-page="protected">
+    <div class="header">
+        <div class="header-content">
+            <div><h1 class="header-title" data-i18n="trainingLive.title">Realtime Training</h1></div>
+            <div class="header-controls"><a href="/training-select" class="btn btn-secondary" data-i18n="back">Back</a><button id="settings-btn" class="btn btn-secondary">Settings</button></div>
+        </div>
+    </div>
+
+    <div id="settings-panel" class="settings-panel">
+        <div class="settings-header"><h2 data-i18n="settings">Settings</h2><button id="close-settings" class="btn btn-secondary btn-small" data-i18n="close">Close</button></div>
+        <div class="settings-section"><h3 data-i18n="theme">Theme</h3><div id="theme-toggle" class="toggle-switch"></div></div>
+        <div class="settings-section"><h3 data-i18n="language">Language</h3><div class="radio-group"><label class="radio-option"><input type="radio" name="language" value="en" checked><span>English</span></label><label class="radio-option"><input type="radio" name="language" value="vi"><span>Tieng Viet</span></label></div></div>
+        <div class="settings-section"><h3 data-i18n="quickNav">Quick Navigation</h3><div id="settings-quick-nav" class="quick-links"></div><button id="logout-btn" class="btn btn-danger btn-small hidden" data-i18n="logout" style="margin-top: 10px; width: 100%;">Logout</button></div>
+    </div>
+
+    <div class="container">
+        <div id="pre-session-card" class="card mb-20">
+            <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+                <strong id="live-session-name">Creative</strong>
+                <span data-i18n="trainingLive.score">Score</span>: <span id="live-score">0</span>
+                <span>Elapsed</span>: <span id="live-elapsed">0</span>s
+                <span>Remaining</span>: <span id="live-remaining">--</span>
+                <button id="live-start-btn" class="btn btn-success" data-i18n="start">Start</button>
+                <button id="send-map-btn" class="btn btn-secondary">Send map info</button>
+            </div>
+        </div>
+
+        <div class="training-layout">
+            <div class="panel">
+                <p><strong data-i18n="trainingLive.coordX">Coordinate X</strong>: <span id="info-x">0</span></p>
+                <p><strong data-i18n="trainingLive.coordY">Coordinate Y</strong>: <span id="info-y">0</span></p>
+                <p><strong data-i18n="trainingLive.speed">Speed</strong>: <span id="info-speed">0</span></p>
+                <p><strong data-i18n="trainingLive.valve">Valve Open</strong></p>
+                <img src="/img/test_img/valve.png" alt="valve" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid var(--border-color);">
+                <p class="mt-20"><strong data-i18n="trainingLive.mode">Mode</strong></p>
+                <img src="/img/test_img/mode.png" alt="mode" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid var(--border-color);">
+            </div>
+
+            <div class="panel map-container">
+                <div id="live-map-grid" class="map-grid"></div>
+            </div>
+
+            <div class="panel">
+                <p>Speed</p>
+                <img src="/img/test_img/chart.png" alt="chart" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid var(--border-color);">
+                <p class="mt-20">Valve Open</p>
+                <img src="/img/test_img/chart.png" alt="chart" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid var(--border-color);">
+                <p class="mt-20">Test</p>
+                <img src="/img/test_img/chart.png" alt="chart" style="width: 100%; max-height: 120px; object-fit: contain; border: 1px solid var(--border-color);">
+            </div>
+        </div>
+    </div>
+
+    <div id="countdown-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 260px; text-align: center;">
+            <div style="font-size: 1.1rem; margin-bottom: 10px;">Starting in</div>
+            <div id="countdown-number" class="countdown-number">3</div>
+        </div>
+    </div>
+
+    <div id="finish-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 420px; text-align: center;">
+            <div class="celebration-icon">🎆</div>
+            <h3 style="margin-bottom: 18px;">Chuc mung 4 diem qua mon</h3>
+            <button id="finish-modal-ok" class="btn btn-primary">OK</button>
+        </div>
+    </div>
+
+    <script src="/static/js/common.js"></script>
+    <script src="/static/js/training_live.js"></script>
+</body>
+</html>

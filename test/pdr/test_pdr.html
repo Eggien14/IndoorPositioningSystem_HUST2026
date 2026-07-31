@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDR Dead Reckoning Test</title>
+    <link rel="stylesheet" href="/static/test_pdr.css">
+</head>
+<body>
+    <main class="app-shell">
+        <header class="topbar">
+            <div>
+                <h1 id="page-title">PDR Dead Reckoning Test</h1>
+                <p id="trajectory-order" class="muted">Loading trajectory...</p>
+            </div>
+            <div class="controls">
+                <label class="mode-label" for="view-mode">View</label>
+                <select id="view-mode">
+                    <option value="path">Prediction path</option>
+                    <option value="points">Prediction points</option>
+                    <option value="live">Live only</option>
+                </select>
+                <button id="start-btn" type="button">Start</button>
+                <button id="reset-btn" type="button">Reset</button>
+            </div>
+        </header>
+
+        <section class="status-strip">
+            <span>Status: <strong id="status-text">idle</strong></span>
+            <span>Rows: <strong id="rows-text">0/0</strong></span>
+            <span>Steps: <strong id="steps-text">0</strong></span>
+            <span>Position: <strong id="latest-text">--</strong></span>
+            <span>Start cell: <strong id="start-text">--</strong></span>
+            <span>Model: <strong id="model-text">--</strong></span>
+            <span>Rate: <strong id="rate-text">--</strong></span>
+        </section>
+
+        <section class="map-stage">
+            <svg id="map-svg" role="img" aria-label="PDR trajectory visualization"></svg>
+        </section>
+    </main>
+    <script src="/static/test_pdr.js"></script>
+</body>
+</html>

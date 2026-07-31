@@ -1,0 +1,157 @@
+================================================================================
+ THAM KHẢO & ĐÁNH GIÁ THUẬT TOÁN 5 — UWB TRILATERATION TIGHTLY-COUPLED EKF (IPS)
+ (research record cho backend/algorithms/trilateration_ekf/)
+================================================================================
+Mục tiêu: định vị 2D (x, y) của tag trong phòng kín bằng cách nạp THẲNG các khoảng
+cách UWB thô tới anchor vào MỘT bộ Extended Kalman Filter (tightly-coupled), thay vì
+giải ra vị trí bằng bình phương tối thiểu rồi mới lọc (đó là Thuật toán 2,
+loosely-coupled). Tài liệu này tập trung phần KHÁC BIỆT của tightly-coupled EKF; phần
+nền chung (ràng buộc dữ liệu, nguồn σ range, NLoS không CIR, trần 4-anchor) dùng CHUNG
+với Thuật toán 2 — xem `../trilateration_LM/reference_tri_lm.txt` (mục 0, 3, 7).
+
+--------------------------------------------------------------------------------
+0. RÀNG BUỘC DỮ LIỆU (giống algo 2 — tóm tắt)
+--------------------------------------------------------------------------------
+- 4 anchor UWB cố định, biết toạ độ (x, y) — DB `map_beacon` (2D, mét).
+- Mỗi nhịp: các khoảng cách thô (cm), CHƯA lọc, topic
+  `2/uwb_ranging/<master>/<slave>` (payload `<tag>,<dist_cm>,...`).
+- KHÔNG có CIR / first-path / chỉ số chất lượng từng range => chống NLoS phải suy ra
+  từ chính range + thống kê đổi mới (innovation), không phải từ CIR.
+- Hệ 2D: giả thiết anchor & tag gần đồng phẳng (lệch độ cao gây bias range).
+- IMU (BNO055) có nhưng KHÔNG dùng để định vị (UWB-only, thống nhất với algo 2).
+
+--------------------------------------------------------------------------------
+1. VÌ SAO TIGHTLY-COUPLED CẦN EKF (không phải KF tuyến tính)
+--------------------------------------------------------------------------------
+- Loosely-coupled (algo 2): tầng LS cho ra (x, y); measurement của bộ lọc cuối CHÍNH
+  là vị trí => H tuyến tính => KF TUYẾN TÍNH là đủ. [PMC9082075]
+- Tightly-coupled (algo 5): measurement là RANGE THÔ h(x) = sqrt((px-ax)^2+(py-ay)^2)
+  — PHI TUYẾN theo trạng thái. Muốn nạp range trực tiếp phải tuyến tính hoá bằng
+  Jacobian H_i = d h / d x => Extended Kalman Filter. [PMC10346922]
+- Ưu điểm tightly-coupled: (a) dùng đo THÔ, không mất thông tin qua bước LS trung
+  gian; (b) cập nhật được dù chỉ còn 2 (hoặc 1) range SAU khi đã khởi tạo, vì mỗi
+  range là một ràng buộc vô hướng độc lập; (c) mỗi range gate riêng -> loại NLoS sạch.
+- Nhược: phi tuyến (rủi ro tuyến tính hoá kém khi xa nghiệm) => cần khởi tạo tốt;
+  phức tạp hơn; nhạy với việc đặt dt cho bước predict.
+
+--------------------------------------------------------------------------------
+2. MÔ HÌNH TRẠNG THÁI & ĐO
+--------------------------------------------------------------------------------
+- Trạng thái: x = [px, py, vx, vy] (vận tốc-hằng, CV / white-noise-acceleration) —
+  baseline chuẩn cho người đi bộ, cho velocity smoothing. [arXiv:2005.00844]
+- Predict: x = F·x, P = F·P·F^T + Q(dt). F là ma trận CV; Q theo PSD gia tốc
+  EKF_PROCESS_PSD (quá nhỏ -> trễ khi rẽ; quá lớn -> kém mượt).
+- Update (mỗi range hợp lệ, TUẦN TỰ vô hướng):
+  * h = ||p - a_i||, innovation nu = d_i - h.
+  * Jacobian H_i = [(px-ax)/h, (py-ay)/h, 0, 0].
+  * S = H·P·H^T + R, R = EKF_RANGE_STD_M^2 (nhiễu range mỗi anchor).
+  * K = P·H^T / S, x += K·nu, P = (I - K·H)·P.
+- Cập nhật tuần tự từng range thay vì gộp vector: đơn giản, dễ gate riêng từng range,
+  và không cần nghịch đảo ma trận (S là vô hướng).
+
+--------------------------------------------------------------------------------
+3. CHỐNG NLoS KHÔNG CẦN CIR — GATE NIS + HUBER (mấu chốt)
+--------------------------------------------------------------------------------
+- NIS (Normalized Innovation Squared) mỗi range: nis = nu^2 / S ~ chi-square 1 bậc.
+  [Bar-Shalom; PMC6210645]
+- Quy tắc 3 mức (chuẩn robust-adaptive):
+  * nis > EKF_GATE_NIS  -> LOẠI range (NLoS spike), KHÔNG cập nhật (đếm rejected).
+  * EKF_HUBER_NIS < nis <= EKF_GATE_NIS -> PHÌNH R (R' = R·nis/EKF_HUBER_NIS) rồi
+    cập nhật (giảm ảnh hưởng range nghi ngờ, KHÔNG bịa dữ liệu).
+  * nis <= EKF_HUBER_NIS -> cập nhật bình thường.
+- Đây là cách xử lý outlier ĐÚNG (gate -> bỏ/phình R), tránh antipattern
+  "clamp về prediction" (xem reference_tri_lm.txt mục 4). [PMC6210645]
+- TRẦN 4-ANCHOR vẫn áp dụng: gate loại bền vững TỐI ĐA 1 anchor NLoS; nếu >=2 range
+  bị bias cùng lúc thì hết dư thừa hình học để cứu (giống algo 2, mục 3d của
+  reference_tri_lm.txt).
+
+--------------------------------------------------------------------------------
+4. KHỞI TẠO (init) — DÙNG LẠI LLS CỦA ALGO 2
+--------------------------------------------------------------------------------
+- Frame đầu: cần >= EKF_MIN_BEACONS_INIT (=3) range để khởi tạo. Dùng LẠI
+  `lls_initial_position` của algo 2 (`../trilateration_LM/engine.py`) để có (x, y)
+  khởi tạo dạng đóng (không lặp, không phân kỳ) -> state [x, y, 0, 0]. Tránh lặp code.
+- Nếu LLS suy biến (hình học xấu) -> fallback dùng centroid các anchor.
+- Khởi tạo tốt rất quan trọng với EKF (tuyến tính hoá quanh điểm hiện tại): seed LLS
+  giúp EKF không hội tụ về nghiệm sai khi GDOP xấu.
+
+--------------------------------------------------------------------------------
+5. ĐẶT THAM SỐ NHIỄU (σ range, gate) — không có dataset thật
+--------------------------------------------------------------------------------
+- σ range LoS: DW1000 ~ ±10 cm; thực tế/đeo người σ ≈ 0.2 m (an toàn) =>
+  EKF_RANGE_STD_M = 0.20 (R = σ^2). [arXiv:2005.10648; reference_tri_lm.txt mục 7]
+- Ngưỡng gate theo chi-square 1 bậc: EKF_GATE_NIS = 9.0 (alpha nhỏ ~0.27%),
+  EKF_HUBER_NIS = 4.0 (vùng nghi ngờ phình R). Có thể đặt theo bảng chi-square_1.
+- EKF_PROCESS_PSD = 1.5 (m^2/s^3): khớp dynamics người đi bộ.
+- CHƯA có log UWB thật (`test/uwb/uwb_fakedata_test.py` = giả) => mọi tham số theo
+  literature; PHẢI hiệu chỉnh lại EKF_RANGE_STD_M, EKF_GATE_NIS, EKF_HUBER_NIS,
+  EKF_PROCESS_PSD khi có dữ liệu đo thật.
+
+--------------------------------------------------------------------------------
+6. KIẾN TRÚC HIỆN TẠI (đối chiếu code)
+--------------------------------------------------------------------------------
+[trilateration_ekf/ekf.py] class TrilaterationEKF
+  - State [x,y,vx,vy]; API: step() (init-if-needed -> predict -> update), predict(dt),
+    update_ranges() (cập nhật tuần tự + gate NIS/Huber), _init_from_ranges() (LLS seed),
+    .velocity, .last_accepted, .last_rejected, reset().
+  - Tham số ở ĐẦU FILE: EKF_PROCESS_PSD, EKF_RANGE_STD_M, EKF_GATE_NIS, EKF_HUBER_NIS,
+    EKF_INIT_POS_VAR, EKF_INIT_VEL_VAR, EKF_MAX_DT_S, EKF_DEFAULT_DT_S,
+    EKF_MIN_BEACONS_INIT.
+  - Khớp đầy đủ với mục 2-5 ở trên (predict CV, update Jacobian range, gate NIS+Huber,
+    init LLS).
+
+[backend/algorithm_5.py] class Algorithm5 (file chủ, per-tag)
+  - process_ranges(raw_distances_cm, dt): clamp dải [RANGE_MIN_M, RANGE_MAX_M] ->
+    TrilaterationEKF.step(). Trả {x, y, velocity, num_beacons, ranges_accepted,
+    ranges_rejected, filtered_distances_cm}.
+  - KHÔNG có pre-filter Kalman từng anchor như algo 2 — R của EKF đã mô hình hoá nhiễu
+    range trực tiếp.
+
+Tầng realtime: `UWBManager` (backend/algorithm_uwb.py) + `UWBRuntime`
+(backend/mqtt_handle/trilateration_uwb/) DÙNG CHUNG cho algo 2 & 5; chọn `Algorithm5`
+khi run["algorithm"] == 5. Trang `/training-live-algorithm5` (clone trang algo 3).
+
+--------------------------------------------------------------------------------
+7. KẾT QUẢ KIỂM CHỨNG (synthetic 4 anchor — chưa có dữ liệu thật)
+--------------------------------------------------------------------------------
+| Kịch bản                         | Sai số vị trí |
+|----------------------------------|---------------|
+| LoS sạch                         | ~ 0.05 m      |
+| 1 anchor NLoS +1.5 m             | ~ 0.04 m  (gate loại range xấu; accepted/rejected = 3/1) |
+| Mục tiêu di chuyển               | ~ 0.02 m      |
+| Chỉ còn 2 anchor (sau khởi tạo)  | vẫn định vị được (lợi thế tightly-coupled) |
+
+So với algo 2 (Huber-LM giảm trọng số anchor NLoS -> ~0.35 m): EKF gate hẳn range NLoS
+nên sạch hơn ở kịch bản 1-anchor-NLoS. Đây là số liệu mô phỏng; cần kiểm chứng lại
+trên log UWB thật.
+
+--------------------------------------------------------------------------------
+8. SO SÁNH ALGO 2 (loosely) vs ALGO 5 (tightly)
+--------------------------------------------------------------------------------
+- Algo 2: range -> Kalman/anchor -> LLS -> LM robust (Huber+WLS) + P -> CV-KF tuyến
+  tính. Module hoá, ổn định, dễ debug; chống NLoS bằng GIẢM TRỌNG SỐ residual.
+- Algo 5: range thô -> 1 EKF (CV predict + Jacobian update + gate NIS/Huber). Dùng đo
+  thô (không mất thông tin), chạy được <3 anchor sau init, loại NLoS bằng GATE; đổi
+  lại phi tuyến, nhạy init/dt hơn.
+- Cả hai UWB-only, không CIR, chịu trần 4-anchor.
+
+--------------------------------------------------------------------------------
+9. NGUỒN (dùng chung với algo 2; xem URL đầy đủ trong reference_tri_lm.txt mục 10)
+--------------------------------------------------------------------------------
+[3] PMC10346922 — UWB/IMU tightly-coupled: range thô -> Jacobian -> EKF (lý do dùng EKF).
+[4] PMC9082075 — loosely-coupled = vị-trí-làm-measurement -> KF tuyến tính (đối chiếu).
+[2] PMC6210645 — gate Mahalanobis/NIS -> phình R / bỏ update (xử lý outlier đúng cách).
+[13] arXiv:2005.10648 — DW1000 ±10 cm LoS, σ≈0.2 m thực tế (đặt R).
+[16] arXiv:2005.00844 — mô hình vận tốc-hằng (CV / NCV).
+[1] arXiv:2205.05939 (Fan&Du) — NLoS không CIR, bias NLoS ≤1.5 m, trần >=2 LoS.
+(Chi tiết tác giả + URL: `../trilateration_LM/reference_tri_lm.txt` mục 10.)
+
+--------------------------------------------------------------------------------
+10. VIỆC CÒN LẠI
+--------------------------------------------------------------------------------
+- Hiệu chỉnh tham số (EKF_RANGE_STD_M, gates, PSD) từ log UWB thật khi có.
+- Kiểm tra master beacon có gửi range không (range hiện về theo topic SLAVE) — bảo đảm
+  >=3 range thật khi triển khai phần cứng.
+- (Tuỳ chọn) thêm mô hình chuyển động tốt hơn CV nếu chuyển động phức tạp; hoặc
+  adaptive Q/R theo innovation.
+================================================================================

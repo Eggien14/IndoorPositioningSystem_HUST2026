@@ -1,0 +1,305 @@
+================================================================================
+ REFERENCE.TXT  —  Đánh giá & đối chiếu mô hình Transformer (Khối 1, Algorithm 3)
+ với các dự án thực tế và bài báo khoa học về Indoor Positioning (IPS)
+--------------------------------------------------------------------------------
+ Người soạn: Claude (theo yêu cầu review ngày 2026-06-02)
+ Phạm vi: backend/algorithms/transformer/  (RSSI Observation Model)
+ Mục tiêu: Kiểm chứng kiến trúc & tham số hiện tại có hợp lý về mặt khoa học không,
+           chỉ ra điểm cần sửa, KHÔNG tự ý sửa code (sẽ điều chỉnh ở lần sau).
+================================================================================
+
+
+0. TÓM TẮT NHANH (đọc trước nếu bận)
+--------------------------------------------------------------------------------
+- Kiến trúc Transformer hiện tại (d_model=64, 4 heads, 2 layers, ~102k params,
+  mean-pooling, head MLP 64->32->2) là HỢP LÝ về quy mô cho bài toán RSSI 8 kênh.
+  Không có lỗi nghiêm trọng về mặt kiến trúc. So với mặt bằng các paper, đây thuộc
+  nhóm "shallow transformer/encoder" — đúng hướng cho input nhỏ.
+
+- CÓ 3 VẤN ĐỀ PHƯƠNG PHÁP LUẬN cần lưu ý (xếp theo mức độ quan trọng):
+    (A) RÒ RỈ DỮ LIỆU KHI CHIA TRAIN/TEST (nghiêm trọng nhất) → con số 0.42 m
+        nhiều khả năng LẠC QUAN, không phản ánh độ chính xác online thật.
+    (B) Coi fingerprint TĨNH như chuỗi thời gian (sliding window 35 mẫu) — không
+        sai nhưng phần lớn chỉ đóng vai trò "làm mượt/khử nhiễu", không phải nơi
+        Transformer phát huy thế mạnh. Hợp lý hơn cho pha ONLINE (đi bộ) sau này.
+    (C) Scaler fit trên TOÀN bộ dữ liệu (gồm cả test) + dùng MinMaxScaler chung
+        với giá trị sentinel -100 → méo phân phối nhẹ và rò rỉ nhẹ.
+
+- VỀ OVERFITTING / EARLY STOPPING:
+    * HIỂU NHẦM CẦN ĐÍNH CHÍNH: KHÔNG có chuyện "nên dừng ở Val Loss 0.6–0.9".
+      Val Loss của bạn đang là MSE (đơn vị mét^2). Best hiện tại = 0.1194 tương
+      đương sai số RMS ~0.49 m. Nếu dừng ở 0.6–0.9 thì model TỆ HƠN (xem mục 6).
+    * Code HIỆN TẠI đã luôn lưu "best checkpoint theo val loss" → model được lưu
+      KHÔNG phải bản overfit ở epoch cuối, mà là bản tốt nhất (epoch 95). Việc
+      train tiếp 5 epoch overfit chỉ TỐN THỜI GIAN, không làm hỏng model đã lưu.
+    * Cách đúng khoa học: EARLY STOPPING THEO "PATIENCE" (dừng khi val loss không
+      cải thiện sau N epoch), KHÔNG phải dừng theo một ngưỡng loss tuyệt đối.
+
+
+================================================================================
+1. NGUỒN THAM KHẢO UY TÍN ĐÃ DÙNG
+================================================================================
+[1] MDPI Sensors (2025) — "From Fingerprinting to Advanced Machine Learning: A
+    Systematic Review of Wi-Fi and BLE-Based Indoor Positioning Systems".
+    https://www.mdpi.com/1424-8220/25/22/6946
+    (bản PMC: https://pmc.ncbi.nlm.nih.gov/articles/PMC12656469/ )
+    -> Review hệ thống mới nhất, tổng hợp số liệu sai số của KNN/CNN/LSTM/Transformer.
+
+[2] arXiv 2506.00656 (2025) — "Permutation-Invariant Transformer Neural
+    Architectures for Set-Based Indoor Localization Using Learned RSSI Embeddings".
+    https://arxiv.org/abs/2506.00656
+    -> Transformer áp cho RSSI; Set Transformer đạt mean error ~2.23 m, coi RSSI
+       là TẬP (set) các AP, dùng attention trên quan hệ giữa các AP.
+
+[3] IEEE Xplore (2024/2025) — "Enhancing Indoor Positioning Accuracy with a
+    Wi-Fi Fingerprinting-Based Transformer System".
+    https://ieeexplore.ieee.org/document/11149044
+    -> Sinh thêm mẫu Wi-Fi tương quan không gian làm input cho Transformer.
+
+[4] MDPI Sensors (2023) — "Neural-Network-Based Localization Method for Wi-Fi
+    Fingerprint Indoor Localization".
+    https://www.mdpi.com/1424-8220/23/15/6992
+
+[5] arXiv 2402.12756 (2024) — "Static vs. Dynamic Databases for Indoor
+    Localization based on Wi-Fi Fingerprinting: A Discussion from a Data
+    Perspective".  https://arxiv.org/abs/2402.12756
+    -> RSSI thu ở các thời điểm train/val/test khác nhau sẽ DỊCH thống kê; random
+       split che giấu hiện tượng này (liên quan trực tiếp vấn đề (A)).
+
+[6] MachineLearningMastery — "A Gentle Introduction to Early Stopping to Avoid
+    Overtraining Neural Networks".
+    https://machinelearningmastery.com/early-stopping-to-avoid-overtraining-neural-network-models/
+[7] "An Empirical Study on the Correlation between Early Stopping Patience and
+    Epochs in Deep Learning" (2024).
+    -> Patience thường dùng 3–10 epoch; dừng khi val loss không cải thiện.
+
+[8] arXiv 1603.07080 — "CSI-based Fingerprinting for Indoor Localization: A Deep
+    Learning Approach" (kinh điển, tham chiếu autoencoder + greedy training).
+
+
+================================================================================
+2. SỐ LIỆU SAI SỐ THỰC TẾ (để định vị model của bạn đang ở đâu)
+================================================================================
+Trích từ review [1] và các paper:
+- CNN 1D trong phòng RẤT nhỏ (37.6 m^2): ~0.058 m   (gần như học thuộc map).
+- Cùng hướng CNN-hybrid (CDAE-CNN): 1.05 m ở testbed nhỏ, NHƯNG tăng lên 12.4 m
+  trên bộ dữ liệu lớn UJIIndoorLoc  --> CẢNH BÁO: số đẹp ở map nhỏ KHÔNG tổng quát.
+- LSTM ở tòa nhà lớn > 9000 m^2: ~1.04 m.
+- BLE + 1 case Transformer ở 400 m^2: ~0.88 m.
+- Set Transformer trên RSSI [2]: ~2.23 m (môi trường lớn, input thưa).
+- Model của bạn: mean 0.422 m, median 0.379 m, CE90 0.727 m trên map ~ vài chục cell.
+
+=> KẾT LUẬN: 0.42 m của bạn NẰM TRONG vùng "rất tốt" CHỈ KHI so với các testbed
+   NHỎ và có khả năng đã bị tối ưu bởi cách chia dữ liệu (mục 5). Đây nên được coi
+   là CẬN TRÊN (best case), không phải độ chính xác online thật. Review [1] nêu rõ
+   rủi ro chính của cả lĩnh vực là "đánh giá lạc quan ở môi trường nhỏ, không lặp
+   lại được ở môi trường lớn/động".
+
+
+================================================================================
+3. ĐỐI CHIẾU KIẾN TRÚC HIỆN TẠI vs THỰC TẾ
+================================================================================
+Thành phần            | Hiện tại của bạn        | Mặt bằng paper/dự án        | Đánh giá
+----------------------|-------------------------|------------------------------|---------
+Input                 | Window [B,35,8] (chuỗi) | Phần lớn: vector 1 lần [B,8] | Xem (B)
+                      |                         | hoặc set các AP [2]          |
+Embedding             | Linear(8->64)           | Linear/Conv1d -> 64..128     | OK
+Positional Encoding   | Sinusoidal              | Sinusoidal / learned         | OK
+Encoder               | 2 layers, 4 heads,      | DNN nông 3-8 lớp; CNN 7-21   | OK (nông,
+                      | ff=256, dropout=0.1     | lớp; transformer 2-6 lớp     |  hợp lý)
+Pooling               | Mean over time          | Mean / CLS token / set-pool  | OK
+Head                  | 64->32->2 (ReLU)        | MLP nhỏ 128/64/32            | OK
+Số tham số            | ~102k                   | vài chục k -> vài triệu      | OK (nhẹ,
+                      |                         |                              |  chạy CPU)
+Normalize RSSI        | MinMaxScaler [0,1]      | MinMax HOẶC z-score          | Xem (C)
+Missing RSSI          | fill = -100 (sentinel)  | -100/-105 sentinel HOẶC mask | Tạm ổn,
+                      |                         |                              |  xem (C)
+Loss                  | MSE (toạ độ)            | MSE / Euclidean              | OK
+Optimizer             | Adam lr=1e-3            | Adam 1e-3..1e-4 (+ wd)       | Thiếu wd
+Regularization        | chỉ Dropout 0.1         | Dropout + weight decay +     | Thiếu
+                      |                         | early stopping               |  (mục 6)
+Chia dữ liệu          | random shuffle theo     | nên tách theo thời gian/     | VẤN ĐỀ (A)
+                      | window, seed=42         | phiên thu / theo vị trí      |
+
+=> Về KIẾN TRÚC & THAM SỐ MODEL: ổn, không cần đập đi xây lại. Vấn đề lớn nằm ở
+   PHƯƠNG PHÁP DỮ LIỆU & ĐÁNH GIÁ, không phải ở số lớp/heads.
+
+
+================================================================================
+4. (B) WINDOW HÓA FINGERPRINT TĨNH THÀNH CHUỖI THỜI GIAN — PHÂN TÍCH
+================================================================================
+- Dữ liệu train của bạn là fingerprint TĨNH: đứng yên 1 ô, thu N mẫu liên tiếp.
+  Mọi mẫu trong cùng ô CÓ CÙNG nhãn (coord_x, coord_y) và về bản chất chỉ khác
+  nhau bởi NHIỄU (multipath, fading, ZOH của firmware).
+- Khi đó self-attention theo trục thời gian KHÔNG có "động học" thật để khai thác;
+  nó chủ yếu học cách LÀM MƯỢT/TRUNG BÌNH 35 mẫu nhiễu -> giống một bộ lọc học được.
+  Điều này KHÔNG SAI, và mean-pooling của bạn càng củng cố vai trò "khử nhiễu" đó.
+- Phần lớn paper fingerprint TĨNH [1][4] dùng 1 VECTOR RSSI -> MLP/CNN, không cần
+  chuỗi. Transformer phát huy thế mạnh khi: (i) input là TẬP AP có quan hệ [2], hoặc
+  (ii) dữ liệu ĐỘNG theo quỹ đạo (người đi bộ) — chính là pha ONLINE + PDR/ESKF của
+  bạn sau này.
+- Hệ quả thực tế: WINDOW_SIZE=35, STEP_SIZE=5 nghĩa là 2 window liền kề chia sẻ
+  30/35 = 86% số mẫu. Cộng với random split (mục 5) -> rò rỉ dữ liệu.
+
+KHUYẾN NGHỊ (lần sau, cân nhắc):
+- Giữ window cho pha ONLINE (đúng chỗ), nhưng cho pha TRAIN tĩnh nên có thêm 1
+  baseline "1 vector -> MLP" để so sánh công bằng. Nếu Transformer-window không
+  hơn MLP-vector đáng kể, nghĩa là attention thời gian chưa mang lại giá trị thật.
+- Nếu giữ window: tăng STEP_SIZE để giảm chồng lấn (ví dụ STEP_SIZE >= WINDOW_SIZE
+  để các window KHÔNG chồng nhau), giảm rò rỉ.
+
+
+================================================================================
+5. (A) RÒ RỈ DỮ LIỆU KHI CHIA TRAIN/TEST — VẤN ĐỀ QUAN TRỌNG NHẤT
+================================================================================
+Hiện trạng trong dataset.py:
+  X, y = get_preprocessed_data()           # gộp TẤT CẢ window của mọi cell
+  train_test_split(X, y, shuffle=True, random_state=42)   # trộn ngẫu nhiên
+
+Tại sao đây là rò rỉ:
+  1. Các window chồng lấn 86% (mục 4) -> window train và window test gần như TRÙNG.
+  2. Mọi mẫu trong 1 cell là cùng vị trí, chỉ khác nhiễu -> test set chứa dữ liệu
+     "gần giống hệt" đã thấy trong train.
+  3. Scaler còn fit trên TOÀN bộ (gồm test) trước khi split (preprocess.py:193).
+
+=> Model được CHẤM trên dữ liệu gần như đã học -> 0.42 m là LẠC QUAN. Đây thực chất
+   đang đo khả năng "nhớ radio-map", không phải khả năng định vị mẫu MỚI/thời điểm
+   MỚI. Paper [5] chỉ rõ: thống kê RSSI dịch theo thời gian thu; random split xoá
+   mất hiệu ứng này nên cho kết quả đẹp giả tạo.
+
+LƯU Ý CÔNG BẰNG: READ_ME của bạn nói random split là CHỦ Ý để học radio-map tĩnh.
+  Quan điểm đó CHẤP NHẬN ĐƯỢC cho 1 BASELINE "memorization", NHƯNG bắt buộc phải
+  ghi rõ con số là CẬN TRÊN, và không dùng nó để hứa độ chính xác online.
+
+KHUYẾN NGHỊ (lần sau):
+- Chia theo THỜI GIAN trong từng cell: ví dụ 70% mẫu thu TRƯỚC -> train, 15% giữa
+  -> val, 15% SAU -> test (split theo collected_at, KHÔNG shuffle xuyên thời gian).
+  Hoặc tốt hơn: thu 2 phiên (session) khác nhau, 1 phiên train, 1 phiên test.
+- Fit scaler CHỈ trên train, rồi transform val/test (tránh rò rỉ scaler).
+- Báo cáo SONG SONG 2 con số: "random-split (lạc quan)" và "temporal-split (thực tế)"
+  để thấy khoảng cách. Đây là chuẩn trung thực khoa học.
+
+
+================================================================================
+6. OVERFITTING, EARLY STOPPING & ĐÍNH CHÍNH HIỂU NHẦM VỀ "VAL LOSS 0.6–0.9"
+================================================================================
+6.1 Quan hệ Val Loss <-> sai số mét (rất quan trọng):
+  - criterion = nn.MSELoss() với reduction='mean' -> trung bình trên CẢ 2 trục x,y:
+        val_loss = mean[ ((dx)^2 + (dy)^2) / 2 ]   (đơn vị: mét^2)
+  - Bình phương khoảng cách Euclid trung bình = 2 * val_loss.
+  - Sai số RMS (mét) = sqrt(2 * val_loss).
+  - Với best val_loss = 0.1194 -> RMS = sqrt(0.2388) ~ 0.49 m  (khớp mean 0.42 m).
+  => NGƯỠNG 0.6–0.9 mà bạn nhắc tới sẽ tương ứng RMS ~ sqrt(1.2)..sqrt(1.8)
+     = 1.1 .. 1.34 m, tức TỆ HƠN model hiện tại 2–3 lần. KHÔNG nên dừng ở đó.
+
+  -> "Dừng ở val loss 0.6–0.9" là HIỂU NHẦM. Không tồn tại một ngưỡng loss tuyệt
+     đối "đẹp" áp cho mọi bài toán; giá trị loss tốt phụ thuộc đơn vị nhãn và bài
+     toán. Với map đơn vị mét như của bạn, loss CÀNG NHỎ CÀNG TỐT, miễn là val loss
+     không bắt đầu tăng trở lại (dấu hiệu overfit).
+
+6.2 Vì sao model đã lưu KHÔNG bị overfit:
+  - train.py luôn so sánh và CHỈ lưu khi val_loss < best_val_loss (dòng 178–181).
+  - Trong log của bạn, best là epoch 95 (0.1194); các epoch 96–100 val loss tăng
+    (0.13–0.16) nhưng KHÔNG được lưu. Vậy file transformer_model.pt = bản tốt nhất,
+    không phải bản overfit. Overfit ở cuối chỉ TỐN THỜI GIAN train, không hại model.
+
+6.3 Cách dừng ĐÚNG (early stopping theo patience) [6][7]:
+  - Theo dõi val loss mỗi epoch; lưu best (đã có).
+  - Đếm số epoch liên tiếp KHÔNG cải thiện (no_improve). Nếu no_improve >= PATIENCE
+    thì dừng sớm. PATIENCE khuyến nghị 8–15 cho bài này (dữ liệu nhỏ, noisy).
+  - Tuỳ chọn min_delta (ví dụ 1e-4) để bỏ qua cải thiện cực nhỏ.
+  - KHÔNG dừng theo ngưỡng loss tuyệt đối. (Nếu thật sự cần "đủ tốt thì dừng" thì
+    đó là tiêu chí phụ, không phải tiêu chí chính.)
+
+6.4 Giảm overfit thêm (nếu val loss tăng sớm):
+  - Thêm weight decay cho Adam: weight_decay = 1e-4 .. 1e-5 (dùng AdamW càng tốt).
+  - Có thể tăng dropout 0.1 -> 0.2 nếu vẫn overfit.
+  - Quan trọng hơn cả: xử lý rò rỉ (mục 5) — overfit "ảo" hiện tại một phần do
+    train/test quá giống nhau nên val loss giảm dễ.
+
+
+================================================================================
+7. BỘ THAM SỐ ĐỀ XUẤT CHO LẦN TRAIN SAU (tóm tắt để bỏ vào config.py)
+================================================================================
+Giữ nguyên (đang ổn):
+  D_MODEL=64, N_HEADS=4, NUM_LAYERS=2, DROPOUT=0.1, INPUT_DIM=8, OUTPUT_DIM=2,
+  WINDOW_SIZE=35, BATCH_SIZE=64, LEARNING_RATE=1e-3, RANDOM_SEED=42.
+
+Thêm mới / sửa (đề xuất — chờ bạn duyệt):
+  WEIGHT_DECAY      = 1e-4         # cho AdamW, chống overfit nhẹ
+  EARLY_STOP_PATIENCE = 12         # dừng nếu 12 epoch không cải thiện val loss
+  EARLY_STOP_MIN_DELTA = 1e-4
+  STEP_SIZE         = 35           # (nếu giữ window) -> window KHÔNG chồng lấn
+  SPLIT_STRATEGY    = "temporal"   # thay random shuffle bằng split theo collected_at
+  SCALER_FIT_ON     = "train_only" # fit scaler chỉ trên train
+  # GIỮ EPOCHS=100 làm trần; early stopping sẽ tự dừng trước.
+
+Lưu ý: KHÔNG đặt ngưỡng "stop khi val_loss < X". Dùng patience.
+
+
+================================================================================
+8. KẾT NỐI VỚI TASK 1 (vì sao map_17/campaign_18 thiếu log) -> đề xuất kỹ thuật
+================================================================================
+Nguyên nhân gốc: train.py KHÔNG tự ghi log/biểu đồ. Nó chỉ print() ra màn hình và
+torch.save() checkpoint. Các file log/PNG/CSV ở map_15 là do THAO TÁC THỦ CÔNG:
+  - train_100_epochs_stdout/stderr.log  = bạn tự redirect "> ...log 2> ...log".
+  - evaluation_*.json/csv               = chạy riêng evaluate.py.
+  - loss_*.png, loss_data.csv           = chạy thủ công script draw.py.
+Ở map_17 bạn chỉ chạy train.py (in ra terminal, không redirect) và chưa chạy
+evaluate.py/draw.py -> nên chỉ có model + scaler.
+
+KHUYẾN NGHỊ: tích hợp logging vào train.py để KHÔNG phụ thuộc thao tác tay:
+  - Ghi đồng thời ra console + file log trong MODEL_SAVE_DIR.
+  - Xuất history (epoch, train_loss, val_loss) ra training_history.csv.
+  - Tuỳ chọn: tự gọi evaluate.py sau khi train xong.
+Như vậy mọi lần train đều có đủ artifact, đồng nhất giữa các campaign.
+
+
+================================================================================
+9. MỨC ĐỘ ƯU TIÊN HÀNH ĐỘNG (đề xuất, chờ bạn quyết)
+================================================================================
+P0 (khoa học, ảnh hưởng tính đúng đắn kết quả):
+   - Sửa rò rỉ dữ liệu: temporal/session split + fit scaler chỉ trên train (mục 5).
+P1 (chất lượng training):
+   - Thêm early stopping (patience) + weight decay/AdamW (mục 6).
+   - Tích hợp logging + history CSV vào train.py (mục 8).
+P2 (nghiên cứu/đối chứng):
+   - Thêm baseline "1 vector RSSI -> MLP" để kiểm chứng giá trị của window/attention
+     (mục 4). Cân nhắc StandardScaler hoặc mask cho missing RSSI thay vì sentinel.
+
+================================================================================
+10. ĐÃ TRIỂN KHAI (cập nhật 2026-06-02, sau khi bạn duyệt)
+================================================================================
+Bạn đã đồng ý triển khai ngay. Các thay đổi đã thực hiện và đã test:
+
+[P0] Chống rò rỉ dữ liệu (preprocess.py + dataset.py):
+  - Thêm SPLIT_STRATEGY="temporal": chia train/val/test theo THỜI GIAN trong từng
+    cell (train = mẫu thu sớm, test = mẫu thu muộn). Window dựng riêng từng split.
+  - Scaler giờ fit CHỈ trên train rồi transform val/test (hết rò rỉ scaler).
+  - dataset.py bỏ random train_test_split; dùng split sẵn từ get_split_windows().
+
+[Yêu cầu mới] Loại bỏ mẫu mất tín hiệu (preprocess.py):
+  - Thay vì fill -100, mọi dòng có bất kỳ kênh RSSI null/NaN hoặc <= -100 bị XOÁ.
+  - In ra số mẫu bị loại / tổng để dễ kiểm soát chất lượng dữ liệu.
+  - Ghi chú: runtime server sau này cũng nên áp đúng quy tắc — cửa sổ chứa mẫu
+    mất tín hiệu thì không xử lý.
+
+[P1] Early stopping + regularization (train.py + config.py):
+  - Optimizer đổi Adam -> AdamW(weight_decay=WEIGHT_DECAY=1e-4).
+  - Early stopping theo patience (EARLY_STOP_PATIENCE=12, MIN_DELTA=1e-4); EPOCHS
+    chỉ còn là TRẦN. Best checkpoint theo val loss vẫn luôn được giữ.
+  - KHÔNG dùng ngưỡng val loss tuyệt đối (đã giải thích lý do ở mục 6).
+
+[P1] Logging tích hợp (train.py):
+  - Tự ghi train_{epochs}_epochs_stdout.log + training_history.csv vào MODEL_SAVE_DIR.
+  - Tự chạy evaluate.py ở cuối (trừ khi --no-eval) -> mọi campaign có đủ artifact.
+    Đây là cách khắc phục tận gốc việc map_17 thiếu log/metrics.
+
+CÒN LẠI ĐỂ CÂN NHẮC SAU (chưa làm, không bắt buộc):
+  - [P2] Baseline "1 vector RSSI -> MLP" để kiểm chứng giá trị của window/attention.
+  - Lưu ý: vì đã chuyển sang temporal split, sai số đo được sẽ THỰC TẾ hơn (thường
+    cao hơn 0.42 m cũ). Đây là điều ĐÚNG và mong đợi, không phải model tệ đi.
+
+================================================================================
+ HẾT.
+================================================================================

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Map - Indoor Positioning System</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body data-auth-page="protected">
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div>
+                <h1 class="header-title" data-i18n="app.title">Indoor Positioning System</h1>
+                <p style="color: var(--text-secondary); font-size: 0.9rem;" data-i18n="app.subtitle">Map Management & Data Collection</p>
+            </div>
+            <div class="header-controls">
+                <a href="/choose-map" class="btn btn-secondary" data-i18n="back">Back</a>
+                <button id="settings-btn" class="btn btn-secondary btn-icon" title="Settings">⚙</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div id="settings-panel" class="settings-panel">
+        <div class="settings-header">
+            <h2 data-i18n="settings">Settings</h2>
+            <button id="close-settings" class="btn btn-secondary btn-small" data-i18n="close">Close</button>
+        </div>
+        
+        <div class="settings-section">
+            <h3 data-i18n="theme">Theme</h3>
+            <div id="theme-toggle" class="toggle-switch"></div>
+        </div>
+        
+        <div class="settings-section">
+            <h3 data-i18n="language">Language</h3>
+            <div class="radio-group">
+                <label class="radio-option">
+                    <input type="radio" name="language" value="en" checked>
+                    <span>English</span>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="language" value="vi">
+                    <span>Tiếng Việt</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h3 data-i18n="quickNav">Quick Navigation</h3>
+            <div id="settings-quick-nav" class="quick-links"></div>
+            <button id="logout-btn" class="btn btn-danger btn-small hidden" data-i18n="logout" style="margin-top: 10px; width: 100%;">Logout</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div style="max-width: 600px; margin: 0 auto;">
+            <h2 data-i18n="createMap.title" style="margin-bottom: 30px;">Create New Map</h2>
+            
+            <form id="create-map-form">
+                <!-- Map Name -->
+                <div class="form-group">
+                    <label class="form-label" data-i18n="createMap.mapName">Map Name</label>
+                    <input 
+                        type="text" 
+                        id="map-name" 
+                        class="form-input" 
+                        required 
+                        maxlength="100"
+                        data-i18n-placeholder="createMap.mapName"
+                        placeholder="Map Name"
+                    >
+                </div>
+                
+                <!-- Length X -->
+                <div class="form-group">
+                    <label class="form-label" data-i18n="createMap.lengthX">Width (X-axis)</label>
+                    <input 
+                        type="number" 
+                        id="length-x" 
+                        class="form-input" 
+                        required 
+                        min="1" 
+                        max="100" 
+                        value="10"
+                    >
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 5px;" data-i18n="createMap.lengthXDesc">
+                        Number of cells along X-axis
+                    </p>
+                </div>
+                
+                <!-- Width Y -->
+                <div class="form-group">
+                    <label class="form-label" data-i18n="createMap.widthY">Height (Y-axis)</label>
+                    <input 
+                        type="number" 
+                        id="width-y" 
+                        class="form-input" 
+                        required 
+                        min="1" 
+                        max="100" 
+                        value="10"
+                    >
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 5px;" data-i18n="createMap.widthYDesc">
+                        Number of cells along Y-axis
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" data-i18n="createMap.offsetAngles">Offset Angle (°)</label>
+                    <input
+                        type="number"
+                        id="offset-angles"
+                        class="form-input"
+                        min="0"
+                        max="359.99"
+                        step="0.01"
+                        value="0"
+                    >
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 5px;" data-i18n="createMap.offsetAnglesDesc">
+                        Clockwise map offset angle from true north
+                    </p>
+                </div>
+                
+                <!-- Preview Info -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <p style="color: var(--text-secondary);">
+                        <strong>Preview:</strong><br>
+                        Total cells: <span id="total-cells">100</span><br>
+                        Grid area: <span id="grid-area">100 m²</span>
+                    </p>
+                </div>
+                
+                <!-- Submit Button -->
+                <button type="submit" class="btn btn-primary" style="width: 100%;" data-i18n="createMap.submit">
+                    Create Map
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/common.js"></script>
+    <script src="/static/js/create_map.js"></script>
+</body>
+</html>

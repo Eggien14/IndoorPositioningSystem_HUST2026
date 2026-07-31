@@ -1,0 +1,216 @@
+================================================================================
+ REFERENCE.TXT  —  Đánh giá & đối chiếu module PDR (Khối 2, Algorithm 3)
+ với các dự án thực tế và bài báo khoa học về Pedestrian Dead Reckoning / IPS
+--------------------------------------------------------------------------------
+ Người soạn: Claude (review ngày 2026-06-02)
+ Phạm vi: backend/algorithms/pdr/  (config.py, pdr_model.py)
+ Mục tiêu: Kiểm chứng thuật toán PDR (kế thừa từ server Django cũ) có hợp lý về mặt
+           khoa học không, chỉ ra điểm cần sửa. KHÔNG tự ý đổi tham số (sẽ bàn sau).
+ Lưu ý: PDR KHÔNG chạy đơn lẻ. Nó là Khối 2 trong [Transformer -> ESKF <- PDR].
+================================================================================
+
+
+0. TÓM TẮT NHANH
+--------------------------------------------------------------------------------
+PDR hiện tại = port gần như nguyên văn thuật toán server cũ:
+  - Phát hiện bước: dual-threshold FSM trên acc_z (đỉnh cao > 1.0, rồi đỉnh thấp
+    < -1.0, trong cửa sổ [100, 600] ms).
+  - Chiều dài bước: CỐ ĐỊNH 0.43 m.
+  - Hướng: yaw của BNO055, bù offset; dx = L·sin(yaw-offset), dy = L·cos(yaw-offset).
+  - Chỉ xuất vector dịch chuyển (dx, dy), KHÔNG cộng dồn vị trí (để ESKF làm).
+
+ĐÁNH GIÁ TỔNG THỂ:
+  + ĐÚNG HƯỚNG: (a) xuất displacement thay vì tự cộng vị trí — chuẩn cho fusion
+    với ESKF (PDR = process/control input, không phải bộ định vị độc lập);
+    (b) dùng yaw đã fuse sẵn của BNO055 — tránh phải tự code Madgwick/Mahony;
+    (c) peak detection là phương pháp phổ biến và hiệu quả nhất trong literature.
+  + Đã sửa được bug logic cũ `if value >= 5 and value <= -5` (điều kiện bất khả thi)
+    bằng kiểm tra np.isfinite.
+
+  - 3 ĐIỂM YẾU LỚN cần lưu ý (xếp theo mức độ quan trọng):
+    (A) CHIỀU DÀI BƯỚC CỐ ĐỊNH 0.43 m — sai số lớn nhất. Literature cho thấy step
+        length cố định gây sai số khoảng cách rất cao khi tốc độ/người thay đổi.
+        Chính dữ liệu test của bạn có cả "bước 0.7m" và "bước ngẫu nhiên" -> 0.43m
+        lệch tới ~38% so với 0.7m. CẦN dùng mô hình step length thích nghi.
+    (B) KHÔNG lọc nhiễu gia tốc trước khi detect đỉnh -> dễ đếm nhầm/sót bước.
+        Literature khuyến nghị low-pass filter (~5 Hz) trước peak detection.
+    (C) NGƯỠNG CỐ ĐỊNH ±1.0 trên 1 trục acc_z -> phụ thuộc hướng đặt thiết bị &
+        tốc độ; nên dùng ngưỡng thích nghi và/hoặc độ lớn gia tốc |a| bất biến hướng.
+
+
+================================================================================
+1. NGUỒN THAM KHẢO UY TÍN ĐÃ DÙNG
+================================================================================
+[1] Sensors (MDPI), 2016 — "Step-Detection and Adaptive Step-Length Estimation for
+    Pedestrian Dead-Reckoning at Various Walking Speeds Using a Smartphone".
+    https://pmc.ncbi.nlm.nih.gov/articles/PMC5038701/
+    -> Công thức Weinberg/Kim/Tian + chứng minh step length cố định kém ở tốc độ cao.
+[2] ScienceDirect, 2022 — "A novel step detection technique for PDR-based navigation".
+    https://www.sciencedirect.com/science/article/pii/S2405959522001473
+[3] ISPRS IJGI (MDPI), 2016 — "Integrated WiFi/PDR/Smartphone Using an Adaptive
+    System Noise Extended Kalman Filter Algorithm for Indoor Localization".
+    https://www.mdpi.com/2220-9964/5/2/8
+    -> Mẫu fusion WiFi(observation) + PDR(process) bằng EKF; số liệu sai số.
+[4] IEEE — "WiFi-PDR indoor fusion positioning based on EKF".
+    https://ieeexplore.ieee.org/iel7/10021331/10021332/10021502.pdf
+[5] Sensors (MDPI), 2019 — "Improved Pedestrian Dead Reckoning Based on a Robust
+    Adaptive Kalman Filter for Indoor Inertial Location System".
+    https://pmc.ncbi.nlm.nih.gov/articles/PMC6359020/
+[6] Sensors (MDPI), 2021 — "Inertial Sensor-Based Step Length Estimation Model by
+    Means of Principal Component Analysis". https://pmc.ncbi.nlm.nih.gov/articles/PMC8159098/
+
+
+================================================================================
+2. SỐ LIỆU THAM CHIẾU TỪ LITERATURE (định vị chất lượng PDR)
+================================================================================
+Sai số ước lượng KHOẢNG CÁCH theo mô hình step length (nguồn [1], test nhiều tốc độ):
+  - Weinberg:           ~19.6% sai số
+  - Kim:                ~23%
+  - Tian (h·f):         ~11.2%
+  - Adaptive (đề xuất): ~4.5%
+=> Mô hình thích nghi tốt hơn rõ rệt. Step length CỐ ĐỊNH thậm chí còn tệ hơn các
+   mô hình empirical trên khi tốc độ thay đổi.
+
+Fusion WiFi + PDR (nguồn [3][4]):
+  - WiFi fingerprint ĐƠN LẺ:        ~4.09 m sai số trung bình.
+  - WiFi + PDR qua (adaptive) EKF:  ~2.32 m.
+=> PDR chính xác cao trong NGẮN HẠN nhưng TRÔI (drift) tích lũy theo thời gian;
+   observation tuyệt đối (WiFi/Transformer) không trôi nhưng nhiễu. Fusion lấy ưu
+   điểm của cả hai. Đây đúng là vai trò ESKF trong kiến trúc của bạn.
+
+Xử lý tín hiệu (nhiều nguồn):
+  - Peak detection là phương pháp phát hiện bước phổ biến & hiệu quả nhất.
+  - Nên low-pass filter gia tốc (cutoff ~5 Hz) TRƯỚC khi detect đỉnh để khử nhiễu.
+  - Ngưỡng cố định gây phát hiện đỉnh sai khi tốc độ đổi -> nên ngưỡng động.
+
+
+================================================================================
+3. VAI TRÒ CỦA PDR TRONG KIẾN TRÚC TỔNG THỂ
+================================================================================
+                 RSSI ──> [Transformer] ──> Z_obs = (x,y) tuyệt đối ─┐
+                                                                      ├─> [ESKF] ─> vị trí cuối
+   IMU (acc_z, yaw) ──> [PDR] ──> (Δx, Δy) mỗi bước (displacement) ──┘
+
+- Transformer = OBSERVATION MODEL: cho tọa độ tuyệt đối, không trôi, nhưng nhiễu
+  và nhảy ở vùng NLOS (~1.2 m mean trên map_17).
+- PDR = PROCESS / MOTION MODEL: cho hướng + quãng đường giữa hai lần quan sát,
+  rất mượt trong ngắn hạn, nhưng TRÔI dần (sai số hướng + sai số step length cộng dồn).
+- ESKF: predict bằng displacement của PDR, update bằng Z_obs của Transformer; điều
+  này ghìm cú nhảy của Transformer ở vùng biên và chặn drift của PDR.
+
+HỆ QUẢ THIẾT KẾ cho PDR (quan trọng):
+  - PDR nên xuất displacement + (lý tưởng) ĐỘ BẤT ĐỊNH của bước (phương sai step
+    length, phương sai hướng) để ESKF đặt ma trận nhiễu quá trình Q hợp lý.
+  - Quy ước hệ trục của PDR phải khớp Transformer/map: Ox = Đông/phải, Oy = Bắc/lên,
+    yaw_map = (yaw_raw - offset) % 360 (giống công thức trong CLAUDE.md). Hiện
+    pdr_model dùng dx=L·sin, dy=L·cos -> KHỚP. Tốt.
+
+
+================================================================================
+4. ĐÁNH GIÁ TỪNG THÀNH PHẦN (hiện tại vs literature)
+================================================================================
+Thành phần        | Hiện tại của bạn         | Mặt bằng literature           | Đánh giá
+------------------|--------------------------|-------------------------------|---------
+Phát hiện bước    | Dual-threshold FSM trên  | Peak detection (phổ biến      | OK nền,
+                  | acc_z, cửa sổ [100,600]ms| nhất), +LPF, +ngưỡng động     | thiếu LPF
+Lọc nhiễu accel   | KHÔNG có                 | LPF ~5 Hz trước peak          | THIẾU (B)
+Trục dùng         | 1 trục acc_z             | |a|=√(ax²+ay²+az²)−g bất biến | Rủi ro (C)
+                  |                          | hướng, hoặc acc_z nếu cố định |
+Ngưỡng            | Cố định ±1.0             | Cố định HOẶC thích nghi       | Rủi ro (C)
+Chiều dài bước    | CỐ ĐỊNH 0.43 m           | Weinberg/Kim/Tian/freq thích  | YẾU NHẤT (A)
+                  |                          | nghi theo biên độ/tần số      |
+Hướng             | BNO055 yaw + offset      | Gyro+mag fuse (BNO055 làm sẵn)| OK
+Đầu ra            | (Δx, Δy) displacement    | displacement làm control input| OK (đúng
+                  | KHÔNG cộng vị trí        | cho EKF/ESKF                  |  hướng)
+Độ bất định       | KHÔNG xuất               | nên cung cấp cho Q của ESKF   | THIẾU
+Cộng dồn vị trí   | Để ESKF làm              | EKF/ESKF predict step         | OK
+
+
+================================================================================
+5. CÁC VẤN ĐỀ CHI TIẾT & KHUYẾN NGHỊ
+================================================================================
+(A) CHIỀU DÀI BƯỚC CỐ ĐỊNH 0.43 m  [ưu tiên cao nhất]
+  - Vấn đề: mọi bước được giả định 0.43 m. Người khác nhau, tốc độ khác nhau, bước
+    dài 0.4–0.8 m. Dữ liệu test của bạn có "bước 0.7m" -> 0.43m sai ~38% quãng đường.
+  - Khuyến nghị: dùng mô hình thích nghi theo biên độ gia tốc trong từng bước. FSM
+    hiện tại ĐÃ biết đỉnh cao & đỉnh thấp -> có sẵn a_max, a_min để áp công thức:
+      * Weinberg:  L = K · (a_max − a_min)^(1/4)
+      * Kim:       L = K · ( (1/N) Σ|a_i| )^(1/3)
+      * Scarlett:  L = K · (ā − a_min)/(a_max − a_min)
+      * Tần số:    L = α · f_step + β   (f_step = 1/chu kỳ bước)
+    K được hiệu chỉnh 1 lần theo người dùng/thiết bị (vài bước biết trước quãng đường).
+  - Giữ DEFAULT_STEP_LENGTH=0.43 m làm fallback khi chưa hiệu chỉnh.
+
+(B) THIẾU LOW-PASS FILTER trên gia tốc  [ưu tiên cao]
+  - Vấn đề: acc_z thô đưa thẳng vào ngưỡng -> nhiễu tần số cao gây đỉnh giả -> đếm
+    dư/sót bước.
+  - Khuyến nghị: thêm LPF (vd moving average hoặc Butterworth cutoff ~3–5 Hz) trên
+    acc_z (hoặc |a|) trước khi so ngưỡng. Đây là streaming nên dùng bộ lọc IIR/đệm nhỏ.
+
+(C) NGƯỠNG ±1.0 CỐ ĐỊNH TRÊN 1 TRỤC  [ưu tiên trung bình]
+  - Vấn đề 1 (đơn vị): acc_z = gì? Nếu là gia tốc tuyến tính đã trừ trọng lực (linear
+    accel, ~0 khi đứng yên) thì ±1.0 hợp lý; nếu là gia tốc thô có trọng lực thì sai.
+    CẦN xác nhận BNO055 xuất loại nào. (Tài liệu server cũ cũng đọc acc theo index,
+    không rõ semantic.)
+  - Vấn đề 2 (hướng): chỉ dùng acc_z giả định trục z luôn thẳng đứng. Nếu thiết bị
+    nghiêng, acc_z trộn thành phần ngang. An toàn hơn: dùng |a| = √(ax²+ay²+az²) − g
+    (bất biến hướng). Nếu thiết bị gắn cố định (mũ/đai) thì acc_z chấp nhận được.
+  - Vấn đề 3 (tốc độ): ngưỡng cố định bỏ sót bước khi đi chậm / đếm dư khi đi nhanh.
+    Cân nhắc ngưỡng động theo trung bình trượt biên độ.
+  - MIN/MAX_STEP_TIME=[100,600]ms: đây là khoảng đỉnh-cao → đỉnh-thấp (nửa bước),
+    KHÔNG phải chu kỳ bước. Nếu sau này cần tần số bước cho mô hình (A)/(Tian), phải
+    đo thêm khoảng đỉnh-đỉnh (peak-to-peak).
+
+(D) KHÔNG XUẤT ĐỘ BẤT ĐỊNH  [cho ESKF]
+  - ESKF cần Q (nhiễu quá trình). Lý tưởng PDR cung cấp σ_step, σ_heading mỗi bước.
+  - Tối thiểu: tài liệu hóa giá trị Q cố định khi xây ESKF (vd σ_step≈0.1·L, σ_heading
+    vài độ). Có thể bổ sung sau, không chặn việc dựng ESKF.
+
+(E) DRIFT HƯỚNG  [giới hạn đã biết]
+  - Dựa hoàn toàn vào yaw BNO055. Nhiễu từ trường trong nhà có thể lệch yaw -> lệch
+    hướng -> sai số ngang tích lũy. ESKF với observation từ Transformer chỉ sửa được
+    vị trí, KHÓ sửa trực tiếp hướng. Ghi nhận là giới hạn; cân nhắc σ_heading lớn hơn
+    ở vùng nhiễu từ.
+
+
+================================================================================
+6. BỘ THAM SỐ / THAY ĐỔI ĐỀ XUẤT (chờ bạn duyệt — chưa áp dụng)
+================================================================================
+Giữ nguyên (đang ổn):
+  UPPER_THRESHOLD=1.0, LOWER_THRESHOLD=-1.0, MIN_STEP_TIME=100, MAX_STEP_TIME=600,
+  DEFAULT_STEP_LENGTH=0.43 (làm fallback), DEFAULT_OFFSET_ANGLE=0.0.
+
+Đề xuất bổ sung vào config.py (lần sau):
+  STEP_LENGTH_MODEL   = "weinberg"   # "fixed" | "weinberg" | "kim" | "frequency"
+  WEINBERG_K          = <hiệu chỉnh> # hệ số K, calib theo người dùng
+  LOWPASS_CUTOFF_HZ   = 3.0          # LPF gia tốc trước peak detection
+  USE_ACC_MAGNITUDE   = False        # True nếu thiết bị có thể nghiêng
+  PROCESS_NOISE_STEP  = 0.1          # σ tương đối của step length (cho ESKF Q)
+  PROCESS_NOISE_HEADING_DEG = 3.0    # σ hướng (cho ESKF Q)
+
+
+================================================================================
+7. PHƯƠNG ÁN TRIỂN KHAI KHỐI PDR (đề xuất các bước)
+================================================================================
+P0 — Nâng cấp thuật toán PDR (trong backend/algorithms/pdr/):
+  1. Thêm low-pass filter streaming cho gia tốc (B).
+  2. Thay step length cố định bằng mô hình thích nghi Weinberg/Kim (A); FSM lưu thêm
+     a_max, a_min trong mỗi bước để tính. Giữ "fixed" làm tùy chọn fallback.
+  3. (Tùy chọn) dùng |a| thay acc_z nếu cần bất biến hướng (C).
+  4. Xuất kèm độ bất định bước/hướng (D) để ESKF dùng.
+
+P1 — Hạ tầng kiểm thử PDR (giống cách test Transformer):
+  - Dùng IMU trong các test_case CSV (đã có acc_x/y/z, yaw...) để phát lại offline,
+    vẽ quỹ đạo dead-reckoning thuần PDR (tự cộng dồn để TRỰC QUAN, dù runtime để ESKF
+    cộng) và so với quỹ đạo TRAJECTORY_CELLS đã biết. Đo drift.
+
+P2 — Tích hợp (khi cả Transformer + PDR sẵn sàng):
+  - Xây Khối 3 ESKF: predict bằng (Δx,Δy) của PDR, update bằng (x_obs,y_obs) của
+    Transformer; điều phối trong backend/algorithm_3.py.
+
+LƯU Ý: Mọi thay đổi tham số/thuật toán PDR sẽ chỉ thực hiện sau khi bạn duyệt từng
+mục, đúng tinh thần "cân nhắc điều chỉnh ở lần sau".
+
+================================================================================
+ HẾT.
+================================================================================

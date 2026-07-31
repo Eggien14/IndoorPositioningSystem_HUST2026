@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercise Customization - Indoor Positioning System</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body data-auth-page="protected">
+    <div class="header">
+        <div class="header-content">
+            <div>
+                <h1 class="header-title" data-i18n="sessionEditor.title">Exercise Customization</h1>
+            </div>
+            <div class="header-controls">
+                <a href="/training-sessions" class="btn btn-secondary" data-i18n="back">Back</a>
+                <button id="settings-btn" class="btn btn-secondary">Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-panel" class="settings-panel">
+        <div class="settings-header"><h2 data-i18n="settings">Settings</h2><button id="close-settings" class="btn btn-secondary btn-small" data-i18n="close">Close</button></div>
+        <div class="settings-section"><h3 data-i18n="theme">Theme</h3><div id="theme-toggle" class="toggle-switch"></div></div>
+        <div class="settings-section"><h3 data-i18n="language">Language</h3><div class="radio-group"><label class="radio-option"><input type="radio" name="language" value="en" checked><span>English</span></label><label class="radio-option"><input type="radio" name="language" value="vi"><span>Tieng Viet</span></label></div></div>
+        <div class="settings-section"><h3 data-i18n="quickNav">Quick Navigation</h3><div id="settings-quick-nav" class="quick-links"></div><button id="logout-btn" class="btn btn-danger btn-small hidden" data-i18n="logout" style="margin-top: 10px; width: 100%;">Logout</button></div>
+    </div>
+
+    <div class="container">
+        <div id="loading" class="spinner"></div>
+
+        <div id="editor-layout" class="split-layout hidden">
+            <div>
+                <div class="card mb-20">
+                    <h3 id="session-name-title"></h3>
+                    <p style="color: var(--text-secondary);">Map: <span id="session-map-info"></span></p>
+                </div>
+                <div class="map-container card">
+                    <div id="map-grid" class="map-grid"></div>
+                </div>
+            </div>
+
+            <div>
+                <div class="panel mb-20">
+                    <h3 data-i18n="sessionEditor.addManual">Add Fire Manually</h3>
+                    <div class="form-group"><label class="form-label" data-i18n="sessionEditor.time">Fire Time (s)</label><input id="fire-time" type="number" class="form-input" min="0" value="0"></div>
+                    <div class="form-group"><label class="form-label" data-i18n="sessionEditor.level">Fire Level</label><input id="fire-level" type="number" class="form-input" min="1" value="1"></div>
+                    <div class="form-group"><label class="form-label">Fire Spread</label><input id="fire-spread" type="number" class="form-input" min="0" value="0"></div>
+                    <div class="form-group"><label class="form-label">Spread Time (s)</label><input id="fire-spread-time" type="number" class="form-input" min="0" value="0"></div>
+                    <div class="form-group"><label class="form-label" data-i18n="sessionEditor.coordX">Coordinate X</label><input id="fire-x" type="number" class="form-input" min="0" value="0"></div>
+                    <div class="form-group"><label class="form-label" data-i18n="sessionEditor.coordY">Coordinate Y</label><input id="fire-y" type="number" class="form-input" min="0" value="0"></div>
+                    <button id="add-fire-manual" class="btn btn-primary" style="width: 100%;" data-i18n="create">Create</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card hidden" id="fire-table-wrapper">
+            <h3 class="mb-20" data-i18n="sessionEditor.timeline">Fire Timeline</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Time(s)</th>
+                        <th>Level</th>
+                        <th>Spread</th>
+                        <th>Spread Time(s)</th>
+                        <th>Cell</th>
+                        <th>X</th>
+                        <th>Y</th>
+                        <th data-i18n="delete">Delete</th>
+                    </tr>
+                </thead>
+                <tbody id="fire-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="fire-cell-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 360px;">
+            <h3 style="margin-bottom: 16px;">Add Fire</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                Cell: (<span id="modal-fire-x"></span>, <span id="modal-fire-y"></span>)
+            </p>
+            <div class="form-group">
+                <label class="form-label">Fire Time (s)</label>
+                <input id="modal-fire-time" type="number" class="form-input" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Fire Level</label>
+                <input id="modal-fire-level" type="number" class="form-input" min="1" value="1">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Fire Spread</label>
+                <input id="modal-fire-spread" type="number" class="form-input" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Spread Time (s)</label>
+                <input id="modal-fire-spread-time" type="number" class="form-input" min="0" value="0">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button id="modal-fire-cancel" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+                <button id="modal-fire-confirm" class="btn btn-primary" style="flex: 1;">Add Fire</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/common.js"></script>
+    <script src="/static/js/session_editor.js"></script>
+</body>
+</html>

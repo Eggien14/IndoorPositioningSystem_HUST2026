@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Collection - Indoor Positioning System</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .layout-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            min-height: calc(100vh - 200px);
+        }
+        
+        .sidebar {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            height: fit-content;
+        }
+        
+        .campaign-item {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .campaign-item:hover {
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+        
+        .campaign-item.selected {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px var(--accent-color);
+        }
+
+        .map-cell.has-samples {
+            box-shadow: inset 0 0 0 2px var(--success-color);
+        }
+
+        .map-cell.completed {
+            box-shadow: inset 0 0 0 2px var(--accent-color);
+        }
+
+        .map-cell-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            padding: 2px 6px;
+            border-radius: 999px;
+            background-color: var(--accent-color);
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .modal-large {
+            max-width: 1100px;
+            width: 95%;
+        }
+
+        .sample-records {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .sample-record {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: var(--bg-primary);
+        }
+
+        .sample-record summary {
+            list-style: none;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            padding: 14px 16px;
+            background-color: var(--bg-secondary);
+            font-weight: 600;
+        }
+
+        .sample-record summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .sample-record-body {
+            padding: 16px;
+        }
+
+        .sample-sections {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .sample-section {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            background-color: var(--bg-secondary);
+        }
+
+        .sample-section h4 {
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .sample-field-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .sample-field {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 0.85rem;
+        }
+
+        .sample-field strong {
+            text-align: right;
+            word-break: break-word;
+        }
+
+        .sample-empty {
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 18px 0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        
+        @media (max-width: 968px) {
+            .layout-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body data-auth-page="protected">
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div>
+                <h1 class="header-title" data-i18n="app.title">Indoor Positioning System</h1>
+                <p style="color: var(--text-secondary); font-size: 0.9rem;" data-i18n="app.subtitle">Map Management & Data Collection</p>
+            </div>
+            <div class="header-controls">
+                <a href="/choose-map" class="btn btn-secondary" data-i18n="back">Back</a>
+                <button id="settings-btn" class="btn btn-secondary btn-icon" title="Settings">⚙</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div id="settings-panel" class="settings-panel">
+        <div class="settings-header">
+            <h2 data-i18n="settings">Settings</h2>
+            <button id="close-settings" class="btn btn-secondary btn-small" data-i18n="close">Close</button>
+        </div>
+        
+        <div class="settings-section">
+            <h3 data-i18n="theme">Theme</h3>
+            <div id="theme-toggle" class="toggle-switch"></div>
+        </div>
+        
+        <div class="settings-section">
+            <h3 data-i18n="language">Language</h3>
+            <div class="radio-group">
+                <label class="radio-option">
+                    <input type="radio" name="language" value="en" checked>
+                    <span>English</span>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="language" value="vi">
+                    <span>Tiếng Việt</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h3 data-i18n="quickNav">Quick Navigation</h3>
+            <div id="settings-quick-nav" class="quick-links"></div>
+            <button id="logout-btn" class="btn btn-danger btn-small hidden" data-i18n="logout" style="margin-top: 10px; width: 100%;">Logout</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Map Info -->
+        <div class="card">
+            <h2 data-i18n="collectData.title">Data Collection</h2>
+            <p style="color: var(--text-secondary); margin-top: 10px;">
+                <strong>Map:</strong> <span id="map-name">Loading...</span> (ID: <span id="map-id"></span>)
+            </p>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="spinner"></div>
+
+        <!-- Layout Container -->
+        <div id="layout-container" class="layout-container hidden">
+            <!-- Sidebar: Campaigns -->
+            <div class="sidebar">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 data-i18n="collectData.campaigns">Campaigns</h3>
+                    <button id="create-campaign-btn" class="btn btn-primary btn-small">+</button>
+                </div>
+                
+                <div id="campaigns-list"></div>
+            </div>
+
+            <!-- Main Content: Map and Controls -->
+            <div class="main-content">
+                <!-- MQTT Topic Input -->
+                <div class="card">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" data-i18n="collectData.mqttTopic">MQTT Topic</label>
+                        <input 
+                            type="text" 
+                            id="mqtt-topic" 
+                            class="form-input" 
+                            placeholder="sensor/data"
+                        >
+                    </div>
+                </div>
+
+                <!-- Map Grid -->
+                <div class="map-container">
+                    <div id="map-grid" class="map-grid"></div>
+                </div>
+
+                <!-- Selected Campaign Info -->
+                <div id="campaign-info" class="card hidden">
+                    <h3 data-i18n="collectData.selectedCampaign">Selected Campaign</h3>
+                    <p style="color: var(--text-secondary);">
+                        <strong>Name:</strong> <span id="selected-campaign-name"></span><br>
+                        <strong data-i18n="collectData.sampledCells">Sampled Passable Cells</strong>: <span id="selected-campaign-collected">0</span> / <span id="selected-campaign-target">0</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cell Action Modal -->
+    <div id="cell-action-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" data-i18n="collectData.cellActions">Cell Actions</h3>
+            </div>
+            <div class="modal-body">
+                <p><strong>Map ID:</strong> <span id="action-map-id"></span></p>
+                <p><strong>Campaign ID:</strong> <span id="action-campaign-id"></span></p>
+                <p><strong>Cell Index:</strong> <span id="action-cell-index"></span></p>
+                <p><strong>Coordinates:</strong> (<span id="action-coord-x"></span>, <span id="action-coord-y"></span>)</p>
+                <hr style="margin: 15px 0; border: none; border-top: 1px solid var(--border-color);">
+                <p style="font-size: 1.05rem;">
+                    <strong data-i18n="collectData.progress">Progress</strong>: <span id="action-progress">0 / 0</span>
+                </p>
+            </div>
+            <div class="modal-footer action-buttons">
+                <button id="action-view-history-btn" class="btn btn-secondary" data-i18n="collectData.viewHistory">View History</button>
+                <button id="action-reset-btn" class="btn btn-danger" data-i18n="collectData.resetData">Reset</button>
+                <button id="action-collect-btn" class="btn btn-success" data-i18n="collectData.collectData">Collect Data</button>
+                <button id="action-close-btn" class="btn btn-secondary" data-i18n="close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Campaign Modal -->
+    <div id="campaign-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" data-i18n="collectData.createCampaign">New Campaign</h3>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" data-i18n="collectData.campaignName">Campaign Name</label>
+                    <input type="text" id="campaign-name" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" data-i18n="collectData.sampleNumber">Target Samples</label>
+                    <input type="number" id="sample-number" class="form-input" value="200" min="1">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="campaign-modal-cancel" class="btn btn-secondary" data-i18n="cancel">Cancel</button>
+                <button id="campaign-modal-save" class="btn btn-primary" data-i18n="create">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Collection Modal -->
+    <div id="collection-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" data-i18n="collectData.title">Data Collection</h3>
+            </div>
+            <div class="modal-body">
+                <p><strong>Map ID:</strong> <span id="col-map-id"></span></p>
+                <p><strong>Campaign ID:</strong> <span id="col-campaign-id"></span></p>
+                <p><strong>Cell Index:</strong> <span id="col-cell-index"></span></p>
+                <p><strong>Coordinates:</strong> (<span id="col-coord-x"></span>, <span id="col-coord-y"></span>)</p>
+                <hr style="margin: 15px 0; border: none; border-top: 1px solid var(--border-color);">
+                <p style="font-size: 1.2rem; text-align: center;">
+                    <strong data-i18n="collectData.progress">Progress:</strong><br>
+                    <span id="col-progress" style="color: var(--accent-color);">0 / 200</span>
+                    <span data-i18n="collectData.samples">samples</span>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button id="collection-start-btn" class="btn btn-success" data-i18n="collectData.start">Start</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cell Details Modal -->
+    <div id="cell-details-modal" class="modal-overlay">
+        <div class="modal modal-large">
+            <div class="modal-header">
+                <h3 class="modal-title" data-i18n="collectData.cellDetails">Cell Data Details</h3>
+            </div>
+            <div class="modal-body">
+                <p><strong>Map ID:</strong> <span id="details-map-id"></span></p>
+                <p><strong>Campaign ID:</strong> <span id="details-campaign-id"></span></p>
+                <p><strong>Cell Index:</strong> <span id="details-cell-index"></span></p>
+                <p><strong>Coordinates:</strong> (<span id="details-coord-x"></span>, <span id="details-coord-y"></span>)</p>
+                <p><strong data-i18n="collectData.collected">Collected</strong>: <span id="details-collected-count"></span> / <span id="details-target-count"></span></p>
+                <div id="cell-details-loading" class="spinner"></div>
+                <div id="cell-samples-list" class="sample-records"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="cell-details-reset-btn" class="btn btn-danger" data-i18n="collectData.resetData">Reset Data</button>
+                <button id="cell-details-close-btn" class="btn btn-secondary" data-i18n="close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div id="tooltip" class="tooltip"></div>
+
+    <!-- Scripts -->
+    <script src="/static/js/common.js"></script>
+    <script src="/static/js/collect_data.js"></script>
+</body>
+</html>

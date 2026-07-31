@@ -1,0 +1,179 @@
+================================================================================
+ REFERENCE.TXT  —  Đánh giá & thiết kế khối ESKF (Khối 3, Algorithm 3)
+ đối chiếu với dự án thực tế và bài báo khoa học về fusion PDR + fingerprint/IPS
+--------------------------------------------------------------------------------
+ Người soạn: Claude (review ngày 2026-06-03)
+ Phạm vi: backend/algorithms/eskf/  (Error-State Kalman Filter)
+ Mục tiêu: Thiết kế ESKF fuse observation tuyệt đối (Transformer) với chuyển động
+           (PDR) cho đúng khoa học. ESKF là TẦNG CUỐI quyết định vị trí.
+================================================================================
+
+
+0. TÓM TẮT NHANH
+--------------------------------------------------------------------------------
+- Vai trò: ESKF nhận (a) observation tuyệt đối Z_obs=(x,y) từ Transformer (không
+  trôi, nhưng nhiễu/nhảy ~1.2m, nặng ở vùng NLOS) và (b) displacement (Δx,Δy)+σ
+  mỗi bước từ PDR (mượt ngắn hạn, nhưng TRÔI). ESKF dung hòa: PDR làm process
+  model (predict), Transformer làm measurement (update).
+- Bài toán của ta là fusion VỊ TRÍ 2D (loosely-coupled). Với state vị trí thuần,
+  ESKF rút gọn thành Kalman Filter tuyến tính trên (x,y) — H tuyến tính, không cần
+  Jacobian phi tuyến. Ta vẫn giữ ĐÚNG khung error-state (predict → update →
+  inject → reset δx) như spec Source/model_3_algorithm.txt yêu cầu, và để mở rộng
+  thêm trạng thái sai số HƯỚNG sau này.
+- Tham số then chốt (đã có sẵn từ 2 khối trước):
+    * R (đo) ≈ (1.2 m)^2  — LẤY TỪ sai số thật của Transformer trên map_17
+      (mean 1.206 m), TUYỆT ĐỐI không dùng 0.42m (số rò rỉ cũ).
+    * Q (quá trình) suy từ σ của PDR mỗi bước: sigma_step, sigma_heading_deg đã
+      được StepEvent xuất sẵn.
+- Lợi ích kỳ vọng (theo literature): khử drift PDR + ghìm nhảy Transformer →
+  ổn định và chính xác hơn từng khối đơn lẻ (xem mục 2).
+
+
+================================================================================
+1. NGUỒN THAM KHẢO UY TÍN
+================================================================================
+[1] ISPRS IJGI (MDPI) 2016 — "Integrated WiFi/PDR/Smartphone Using an Adaptive
+    System Noise Extended Kalman Filter Algorithm for Indoor Localization".
+    https://www.mdpi.com/2220-9964/5/2/8
+    -> Mẫu fusion WiFi(measurement) + PDR(process) bằng EKF; Q THÍCH NGHI theo
+       trạng thái đi thẳng/rẽ để chống cả nhảy WiFi lẫn drift PDR.
+[2] Sensors (MDPI) 2015 — "Extended Kalman Filter for Real Time Indoor Localization
+    by Fusing WiFi and Smartphone Inertial Sensors". https://www.mdpi.com/2072-666X/6/4/523
+[3] Geo-spatial Information Science 2022 — "Indoor positioning based on tightly
+    coupling of PDR and Wi-Fi FTM". https://www.tandfonline.com/doi/pdf/10.1080/10095020.2022.2072776
+    -> Tightly-coupled PDR/Wi-Fi FTM EKF đạt ~0.98 m (RMSE 1.10 m), tốt hơn loosely.
+[4] arXiv 2109.04908 — "Error State Extended Kalman Filter Multi-Sensor Fusion for
+    UAV Localization in GPS/Magnetometer-Denied Indoor Environments".
+    -> Ưu điểm error-state: nếu filter lỗi vẫn có vị trí từ motion model; tách IMU
+       khỏi sensor phụ rồi cộng ở bước correction; bám drift tốt.
+[5] MDPI Symmetry 2023 — "Error State Extended Kalman Filter Localization for
+    Underground Mining". https://www.mdpi.com/2073-8994/15/2/344
+[6] arXiv 2001.01225 — "Error Model of Radio Fingerprint and PDR Fusion Indoor
+    Localization" (mô hình lỗi fingerprint + PDR).
+[7] Sensors (MDPI) 2020 — "An Improved Pedestrian Tracking Method Based on Wi-Fi
+    Fingerprinting and PDR". https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7039223/
+
+
+================================================================================
+2. SỐ LIỆU THAM CHIẾU (định vị kỳ vọng của fusion)
+================================================================================
+- WiFi fingerprint ĐƠN LẺ: ~4.09 m  →  WiFi + PDR (adaptive EKF): ~2.32 m  [1].
+- Tightly-coupled PDR/Wi-Fi FTM EKF: ~0.98 m, RMSE 1.10 m  [3].
+- ESKF (biến thể nâng cao) giảm sai số vị trí 32–54%, sai số hướng 2–21% so với
+  EKF thường trong một số test  [tổng hợp].
+=> Với Transformer ~1.2m (observation) + PDR drift ~1.3m/vòng, kỳ vọng fusion ESKF
+   cho kết quả ỔN ĐỊNH hơn và <= 1.2m, đồng thời mượt (ít nhảy) hơn Transformer đơn lẻ.
+
+Ý nghĩa cốt lõi (nhất quán mọi nguồn): PDR chính xác NGẮN HẠN nhưng tích lũy lỗi;
+fingerprint/Transformer KHÔNG tích lũy nhưng nhiễu. KF/EKF/ESKF lấy ưu điểm cả hai.
+
+
+================================================================================
+3. VAI TRÒ TRONG KIẾN TRÚC
+================================================================================
+     RSSI ─> [Transformer] ─> Z_obs=(x,y), R≈(1.2m)^2 ─────────────┐
+                                                                    ├─> [ESKF] ─> vị trí cuối (x,y)
+     IMU  ─> [PDR] ─> StepEvent(Δx,Δy, sigma_step, sigma_heading) ──┘  (predict)
+
+- PDR fire theo BƯỚC (event-driven, ~1.4 Hz) → mỗi bước gọi ESKF.predict.
+- Transformer fire theo CỬA SỔ RSSI (~7 Hz sau downsample) → mỗi lần gọi ESKF.update.
+- Hai luồng BẤT ĐỒNG BỘ: ESKF phải cho phép predict và update gọi độc lập, xen kẽ.
+
+
+================================================================================
+4. THIẾT KẾ ESKF (công thức cụ thể)
+================================================================================
+Ký hiệu: nominal state p = [x, y]^T (vị trí thật ước lượng). Error state δx = [δx, δy]^T.
+Hiệp phương sai P (2x2). Tất cả đơn vị mét.
+
+4.1 PREDICT (mỗi khi PDR có bước, control u = [Δx, Δy] từ StepEvent):
+    Nominal:   p_k = p_{k-1} + u
+    Covariance: P_k = F P_{k-1} F^T + Q,   với F = I (sai số vị trí không tự tiến hóa)
+                => P_k = P_{k-1} + Q
+    Q (process noise) suy từ độ bất định bước của PDR:
+        - Thành phần dọc bước:  sigma_step (m) từ StepEvent.
+        - Thành phần ngang (do sai số hướng): L * sin(sigma_heading) ≈ L * rad(sigma_heading).
+      Để đơn giản & vững, dùng Q chéo:
+        Q = diag( q^2, q^2 ),  q = sqrt(sigma_step^2 + (L*rad(sigma_heading))^2)
+      (Có thể nâng cấp: xoay Q theo hướng bước để mô hình hóa lỗi dọc/ngang riêng.)
+
+4.2 UPDATE (mỗi khi Transformer có Z_obs = [z_x, z_y]):
+    H = I (quan sát trực tiếp vị trí).
+    Innovation:        δz = Z_obs - p_k
+    Innovation cov:    S = H P H^T + R = P_k + R,   R = diag(r^2, r^2), r ≈ 1.2 m
+    Kalman gain:       K = P_k H^T S^{-1} = P_k S^{-1}
+    Error estimate:    δx̂ = K · δz
+    INJECT:            p_k <- p_k + δx̂
+    Covariance:        P_k <- (I - K H) P_k = (I - K) P_k
+    RESET:             δx̂ <- 0  (error-state luôn reset sau khi tiêm)
+
+4.3 KHỞI TẠO:
+    p_0 = vị trí đầu (ô khởi đầu, hoặc Z_obs đầu tiên của Transformer).
+    P_0 = diag(p0^2, p0^2), p0 ~ vài mét (chưa chắc chắn vị trí đầu).
+
+4.4 GATING (chống outlier của Transformer ở vùng NLOS — khuyến nghị):
+    Mahalanobis: d^2 = δz^T S^{-1} δz. Nếu d^2 > ngưỡng (vd 9 ≈ 3σ cho 2 DoF) thì
+    BỎ QUA update đó (coi là nhảy NLOS). Đây là cách ESKF "ghìm cú nhảy" của Transformer.
+
+
+================================================================================
+5. VÌ SAO ESKF (vs EKF/KF) & RÚT GỌN CHO BÀI TOÁN NÀY
+================================================================================
+- Spec (Source/model_3_algorithm.txt) yêu cầu error-state: ước lượng δx rồi tiêm
+  ngược, reset — vì lọc trực tiếp tọa độ dễ phân kỳ. Ta tuân thủ khung này.
+- Với STATE VỊ TRÍ THUẦN 2D, động học sai số tuyến tính và H=I ⇒ ESKF ≡ KF tuyến
+  tính. Không cần Jacobian phi tuyến ở giai đoạn này. Lợi ích error-state thật sự
+  phát huy khi thêm trạng thái HƯỚNG (phi tuyến) — để mở rộng sau (mục 7).
+- Ưu điểm thực tế [4][5]: nếu update lỗi/thiếu (mất RSSI), hệ vẫn chạy bằng predict
+  của PDR (motion model) → robust, không "đứng hình".
+
+
+================================================================================
+6. THAM SỐ Q / R (đề xuất, có cơ sở từ 2 khối trước)
+================================================================================
+- R (measurement, Transformer): r = 1.2 m  ⇒  R = diag(1.44, 1.44).  KHÔNG dùng 0.42.
+  (Có thể nâng cấp: R lớn hơn ở vùng cell rìa/NLOS nơi Transformer sai nhiều.)
+- Q (process, PDR): suy từ StepEvent mỗi bước:
+    sigma_step = PROCESS_NOISE_STEP_RATIO * step_length (mặc định 0.15 * L)
+    sigma_heading_deg = 3.0
+    q^2 = sigma_step^2 + (L * radians(sigma_heading_deg))^2
+- P0 = diag(9, 9) (đứng đầu chưa chắc chắn ~3m), hoặc nhỏ nếu tin ô khởi đầu.
+- Gating ngưỡng Mahalanobis ~9.0 (chi-square 2 DoF, ~99%).
+- Q THÍCH NGHI (nâng cấp theo [1]): tăng Q khi rẽ, giảm khi đi thẳng — để sau.
+
+
+================================================================================
+7. QUYẾT ĐỊNH THIẾT KẾ CHO TRIỂN KHAI CỦA TA
+================================================================================
+P0 (làm ngay):
+  - ESKF 2D vị trí thuần [x,y] đúng khung error-state (predict/update/inject/reset).
+  - Q từ StepEvent của PDR; R từ sai số Transformer (1.2m); có Mahalanobis gating.
+  - Khởi tạo p0 từ ô khởi đầu HOẶC Z_obs đầu tiên.
+  - API: predict(delta_x, delta_y, sigma_step, sigma_heading_deg, step_length),
+         update(z_x, z_y, r) -> bool(accepted), get_state() -> (x, y, P).
+
+MỞ RỘNG (ghi nhận, làm sau nếu cần):
+  - Thêm trạng thái sai số HƯỚNG δθ (bias yaw) để observation vị trí dần sửa drift
+    hướng của PDR (lúc này mới thật sự cần Jacobian → ESKF đầy đủ).
+  - Q xoay theo hướng bước (lỗi dọc ≠ ngang).
+  - R thích nghi theo vùng tin cậy của Transformer.
+
+GIỚI HẠN:
+  - Với position-only, ESKF KHÔNG sửa được trực tiếp drift HƯỚNG; nó chỉ kéo vị trí
+    về observation. Drift hướng dài hạn cần trạng thái δθ (mở rộng) hoặc map-matching.
+
+
+================================================================================
+8. KẾ HOẠCH TRIỂN KHAI
+================================================================================
+1. backend/algorithms/eskf/config.py  — R, Q ratio, P0, gating threshold.
+2. backend/algorithms/eskf/eskf_model.py — class ESKF2D (predict/update/inject/reset).
+3. backend/algorithms/eskf/READ_ME_eskf.md — tài liệu như transformer/pdr.
+4. backend/algorithm_3.py — điều phối: IMU→PDR→ESKF.predict; RSSI→Transformer→ESKF.update.
+5. test/tran_pdr_eskf/ — local web test end-to-end (replay CSV có CẢ RSSI lẫn IMU,
+   dùng model map_17; vẽ 3 quỹ đạo: Transformer-only, PDR-only, ESKF-fused).
+6. Cập nhật CLAUDE_algor3.md khi xong.
+
+================================================================================
+ HẾT.
+================================================================================

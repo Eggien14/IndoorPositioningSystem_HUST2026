@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm 3 Fusion Test (Transformer + PDR + ESKF)</title>
+    <link rel="stylesheet" href="/static/test_tran_pdr_eskf.css">
+</head>
+<body>
+    <main class="app-shell">
+        <header class="topbar">
+            <div>
+                <h1 id="page-title">Algorithm 3 Fusion (Transformer + PDR + ESKF)</h1>
+                <p id="trajectory-order" class="muted">Loading...</p>
+            </div>
+            <div class="controls">
+                <label class="mode-label" for="view-mode">View</label>
+                <select id="view-mode">
+                    <option value="all">All layers</option>
+                    <option value="fused">Fused only</option>
+                    <option value="compare">Fused vs PDR</option>
+                </select>
+                <button id="start-btn" type="button">Start</button>
+                <button id="reset-btn" type="button">Reset</button>
+            </div>
+        </header>
+
+        <section class="status-strip">
+            <span>Status: <strong id="status-text">idle</strong></span>
+            <span>Rows: <strong id="rows-text">0/0</strong></span>
+            <span>Steps: <strong id="steps-text">0</strong></span>
+            <span>Updates: <strong id="updates-text">0</strong></span>
+            <span>Rejected: <strong id="rejected-text">0</strong></span>
+            <span>Fused pos: <strong id="fused-text">--</strong></span>
+        </section>
+
+        <section class="legend">
+            <span><i class="swatch" style="background:#98a2b3"></i> Reference</span>
+            <span><i class="dot-swatch" style="background:#d9480f"></i> Start cell</span>
+            <span><i class="swatch" style="background:#f08c00"></i> PDR only (drift)</span>
+            <span><i class="dot-swatch" style="background:#2f9e44"></i> Transformer obs</span>
+            <span><i class="dot-swatch" style="background:#e03131"></i> Obs rejected (NLOS)</span>
+            <span><i class="swatch" style="background:#1c54c9"></i> ESKF fused</span>
+        </section>
+
+        <section class="map-stage">
+            <svg id="map-svg" role="img" aria-label="Algorithm 3 fusion visualization"></svg>
+        </section>
+    </main>
+    <script src="/static/test_tran_pdr_eskf.js"></script>
+</body>
+</html>
