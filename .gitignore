@@ -1,30 +1,17 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-venv/
-env/
-ENV/
-.venv
+# Shared ignores for the whole project
+Software/Server_main/.claude/
+Software/Server_main/Source/
+Software/Server_main/venv/
+Software/Server_main/.env
+Software/Server_main/CLAUDE*.md
+Software/Server_main/**/CLAUDE*.md
+Software/Server_main/**/__pycache__/
+Software/Server_main/**/*.log
+Software/Server_main/backend/algorithms/transformer/model/*/campaign_21/
 
-# Environment
-.env
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Project specific
-*.log
-CLAUDE*.md
-/.claude/
-/Source/
-/venv/
+# PlatformIO / VS Code local artifacts
+Firmware/**/.pio/
+Firmware/**/.vscode/
+Firmware/**/.platformio/
+Firmware/**/build/
+Firmware/**/cmake-build-*/
