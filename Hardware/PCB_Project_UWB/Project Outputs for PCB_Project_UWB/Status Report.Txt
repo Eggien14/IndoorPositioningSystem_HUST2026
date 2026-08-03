@@ -1,0 +1,20 @@
+Output: Gerber Files
+Type  : Gerber
+From  : Variant [[No Variations]] of Project [PCB_Project_UWB.PrjPcb]
+   Generated File[Beacon_V3.GTO]
+   Generated File[Beacon_V3.GTP]
+   Generated File[Beacon_V3.GTS]
+   Generated File[Beacon_V3.GTL]
+   Generated File[Beacon_V3.GBL]
+   Generated File[Beacon_V3.GBS]
+   Generated File[Beacon_V3.GBP]
+   Generated File[Beacon_V3.GBO]
+   Generated File[Beacon_V3.GM]
+   Generated File[Beacon_V3.EXTREP]
+   Generated File[Beacon_V3.REP]
+
+
+Files Generated   : 11
+Documents Printed : 0
+
+Finished Output Generation At 12:52:03 PM On 3/16/2026

@@ -1,0 +1,323 @@
+/* Scenarios.css */
+/* Kế thừa bố cục từ MapEditor.css cho phần lưới bản đồ */
+@import "./MapEditor.css";
+
+/* Bố cục chính của màn hình Scenarios */
+.scenarios-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+.scenarios-container .map-editor {
+  justify-content: center;
+  gap: 150px;
+  margin-top: 44px;
+}
+.scenarios-container .map-sidebar {
+  position: relative;
+  gap: 16px;
+}
+.scenarios-container .map-canvas {
+  position: relative;
+}
+.scenarios-container .segmented-control {
+  display: inline-flex;
+  width: fit-content;
+  align-self: center;
+}
+.map-floating-segment {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  border-radius: 999px;
+  background: rgba(118, 118, 128, 0.12);
+  padding: 4px;
+}
+.segment-icon-img {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+.input-field-name {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #d2d2d7;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+  transition: all 0.2s;
+  width: 100%;
+}
+.input-field-name:focus {
+  outline: none;
+  border-color: #0071e3;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
+}
+.scenarios-container .sidebar-footer {
+  margin-top: 0px;
+}
+/* Nút quay lại và tiêu đề */
+.scenarios-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.scenarios-header .success-msg {
+  margin: 0;
+}
+.scenarios-title-group {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* KHUNG CHỌN BÀI TẬP (Dropdown) */
+.scenario-selector-box {
+  position: absolute;
+  top: -60px;
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 6px 8px;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scenario-select {
+  flex: 1;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid #d2d2d7;
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+  background-color: #f8fafc;
+  cursor: pointer;
+}
+.scenario-select:hover {
+  outline: none;
+  border-color: #0071e3;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
+}
+/* ================================================= */
+/* --- CSS NÚT SAVE & DELETE VUÔNG TRÊN HEADER --- */
+/* ================================================= */
+.btn-icon-square {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btn-icon-save {
+  background: #3b82f6; /* Màu Xanh dương */
+  color: white;
+}
+
+.btn-icon-save:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-icon-delete {
+  background: #ef4444; /* Màu Đỏ/Hồng */
+  color: white;
+}
+
+.btn-icon-delete:hover {
+  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+/* Ô LƯỚI BẢN ĐỒ CÓ CHỨA NGỌN LỬA */
+.fire-icon {
+  font-size: 30px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.6));
+  animation: fire-flicker 0.5s infinite alternate;
+}
+
+/* Hiệu ứng nhấp nháy cho ngọn lửa */
+@keyframes fire-flicker {
+  0% {
+    transform: translate(-50%, -50%) scale(0.95);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.05);
+    opacity: 1;
+  }
+}
+.scenario-name-wrapper {
+  margin-bottom: 5px; /* Ép khoảng cách dưới ô Input Scenario Name gọn hơn */
+}
+
+/* DANH SÁCH NGỌN LỬA Ở SIDEBAR */
+.inspector-panel {
+  flex: 1;
+  background: #f5f5f7;
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.inspector-hint {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* Các thẻ thông tin ngọn lửa */
+.fire-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fff;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 3px;
+}
+
+/* ICON NGỌN LỬA BÊN TRONG THẺ (CHIP) */
+.fire-chip {
+  font-size: 20px; /* Tăng size để icon SVG hiển thị to rõ hơn */
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.fire-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #64748b;
+}
+.fire-info strong {
+  color: #0f172a;
+}
+/* --- CSS CHO MODAL POPUP --- */
+.modal-header-title {
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.s-modal-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  text-align: left;
+  margin-top: 15px;
+  margin-bottom: 15px;
+  /* margin-top: 0; */
+}
+/* ========================================== */
+/* --- 2. HOVER ACTION CHO NGỌN LỬA TRÊN MAP --- */
+/* ========================================== */
+.fire-on-map-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+/* Ẩn các nút hành động theo mặc định */
+.fire-hover-actions {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: rgba(255, 255, 255, 0.95);
+  padding: 6px;
+  border-radius: 30px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e2e8f0;
+  z-index: 20;
+}
+
+/* Chỉ hiện lên khi di chuột vào ô chứa ngọn lửa */
+.map-cell:hover .fire-hover-actions,
+.fire-on-map-wrapper:hover .fire-hover-actions {
+  opacity: 1;
+  visibility: visible;
+  top: -45px; /* Nảy nhẹ lên trên ngọn lửa */
+}
+
+/* Nút hình tròn xoe */
+.fire-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.fire-action-btn.edit-btn {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+.fire-action-btn.edit-btn:hover {
+  background: #3b82f6;
+  color: white;
+  transform: scale(1.1);
+}
+.fire-action-btn.delete-btn {
+  background: #fef2f2;
+  color: #ef4444;
+}
+.fire-action-btn.delete-btn:hover {
+  background: #ef4444;
+  color: white;
+  transform: scale(1.1);
+}
+.fire-svg-icon {
+  width: 1.2em;
+  height: 1.2em;
+  display: block;
+}

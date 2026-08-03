@@ -1,0 +1,70 @@
+Removed Pin From Net: NetName=PC13 Pin=R1-2
+Removed Pin From Net: NetName=LED_ESP_34 Pin=R10-2
+Change Component Designator: OldDesignator=LED1 NewDesignator=LED2
+Change Component Designator: OldDesignator=LED2 NewDesignator=LED3
+Change Component Designator: OldDesignator=LED3 NewDesignator=LED5
+Change Component Designator: OldDesignator=LED4 NewDesignator=LED6
+Change Component Designator: OldDesignator=R1 NewDesignator=R3
+Change Component Designator: OldDesignator=R3 NewDesignator=R4
+Change Component Designator: OldDesignator=R4 NewDesignator=R5
+Change Component Designator: OldDesignator=R5 NewDesignator=R6
+Change Component Designator: OldDesignator=R6 NewDesignator=R7
+Change Component Designator: OldDesignator=R7 NewDesignator=R8
+Change Component Designator: OldDesignator=R8 NewDesignator=R9
+Change Component Designator: OldDesignator=R9 NewDesignator=R10
+Change Component Designator: OldDesignator=R10 NewDesignator=R12
+Change Component Designator: OldDesignator=R11 NewDesignator=R13
+Change Component Description : Designator=BT1 Old Description=SMT Polarized Battery Holder for 18650 Battery New Description=SMT Polarized Battery Holder for 18650 Battery | Keystone Electronics 1042P
+Added Component: Designator=LED1(Led 0805 Blue)
+Add component (AddParameter): Name = "BRAND"; Value = ""; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "PACKAGE"; Value = ""; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "PART NO"; Value = ""; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "STOCK CODE"; Value = ""; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "SUPPLIER"; Value = ""; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "TYPE"; Value = ""; VariantName = "[No Variations]"
+Added Component: Designator=LED4(Led 0805 Blue)
+Add component (AddParameter): Name = "BRAND"; Value = ""; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "PACKAGE"; Value = ""; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "PART NO"; Value = ""; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "STOCK CODE"; Value = ""; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "SUPPLIER"; Value = ""; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "TYPE"; Value = ""; VariantName = "[No Variations]"
+Added Component: Designator=R1(tro smd 0805)
+Add component (AddParameter): Name = "Chung_Loai"; Value = "Dán"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Don_Vi"; Value = "Con"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Kieu_Chan"; Value = ""; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Ma_Hang"; Value = "MH005468"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "So_Chan"; Value = "2"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Ten_Linh_Kien"; Value = "Tr? 0805 1% 1k"; VariantName = "[No Variations]"
+Added Component: Designator=R11(tro smd 0805)
+Add component (AddParameter): Name = "Chung_Loai"; Value = "Dán"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Don_Vi"; Value = "Con"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Kieu_Chan"; Value = ""; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Ma_Hang"; Value = "MH005468"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "So_Chan"; Value = "2"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Ten_Linh_Kien"; Value = "Tr? 0805 1% 1k"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=3V3 Pin=LED1-1
+Added Pin To Net: NetName=3V3_ESP Pin=LED4-1
+Added Pin To Net: NetName=PC13 Pin=R1-2
+Added Pin To Net: NetName=LED_ESP_34 Pin=R11-2
+Change Net Name : Old Net Name=NetLED1_2 New Net Name=NetLED2_2
+Change Net Name : Old Net Name=NetLED2_2 New Net Name=NetLED3_2
+Change Net Name : Old Net Name=NetLED3_2 New Net Name=NetLED5_2
+Change Net Name : Old Net Name=NetLED4_2 New Net Name=NetLED6_2
+Change Net Name : Old Net Name=NetR6_2 New Net Name=NetR7_2
+Added Pin To Net: NetName=LED_ESP_35 Pin=R12-2
+Added Pin To Net: NetName=LED_ESP_35 Pin=U4-7
+Added Net: Name=LED_ESP_35
+Added Pin To Net: NetName=NetLED1_2 Pin=LED1-2
+Added Pin To Net: NetName=NetLED1_2 Pin=R1-1
+Added Net: Name=NetLED1_2
+Added Pin To Net: NetName=NetLED4_2 Pin=LED4-2
+Added Pin To Net: NetName=NetLED4_2 Pin=R11-1
+Added Net: Name=NetLED4_2
+Added Pin To Net: NetName=PB9 Pin=R3-2
+Added Pin To Net: NetName=PB9 Pin=U2-46
+Added Net: Name=PB9
+Added Member To Class: ClassName=Beacon_V2 Member=Component LED5 Led
+Added Member To Class: ClassName=Beacon_V2 Member=Component LED6 Led
+Added Member To Class: ClassName=Beacon_V2 Member=Component R12 1k
+Added Member To Class: ClassName=Beacon_V2 Member=Component R13 1k

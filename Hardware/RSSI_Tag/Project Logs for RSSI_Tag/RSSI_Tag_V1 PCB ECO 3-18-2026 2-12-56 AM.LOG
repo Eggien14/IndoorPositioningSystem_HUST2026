@@ -1,0 +1,4 @@
+Added Component: Designator=Battery2(JP_1x2)
+Added Pin To Net: NetName=VBAT- Pin=Battery2-1
+Added Pin To Net: NetName=VBAT+ Pin=Battery2-2
+Added Member To Class: ClassName=RSSI_Tag_V1 Member=Component Battery2 JP_1x2

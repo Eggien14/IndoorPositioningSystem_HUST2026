@@ -1,0 +1,38 @@
+Removed Pin From Net: NetName=GND Pin=R5-2
+Change Component Comment : Designator=P2 Old Comment=Soil Moisture New Comment=UART
+Change Component Designator: OldDesignator=C2 NewDesignator=C3
+Change Component Designator: OldDesignator=C3 NewDesignator=C2
+Change Component Designator: OldDesignator=C14 NewDesignator=C15
+Change Component Designator: OldDesignator=C15 NewDesignator=C14
+Change Component Designator: OldDesignator=JP1 NewDesignator=JP2
+Change Component Designator: OldDesignator=R2 NewDesignator=R3
+Change Component Designator: OldDesignator=R3 NewDesignator=R2
+Change Component Designator: OldDesignator=R5 NewDesignator=R6
+Change Component Designator: OldDesignator=R6 NewDesignator=R5
+Change Component Description : Designator=BT1 Old Description=SMT Polarized Battery Holder for 18650 Battery New Description=SMT Polarized Battery Holder for 18650 Battery | Keystone Electronics 1042P
+Added Component: Designator=JP1(JP3x2)
+Add component (AddParameter): Name = "Value"; Value = "Connector 3x2"; VariantName = "[No Variations]"
+Added Component: Designator=R7(tro smd 0805)
+Add component (AddParameter): Name = "Chung_Loai"; Value = "Dán"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Don_Vi"; Value = "Con"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Kieu_Chan"; Value = ""; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Ma_Hang"; Value = "MH005473"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "So_Chan"; Value = "2"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Ten_Linh_Kien"; Value = "Tr? 0805 1% 10k"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=3V3 Pin=JP1-1
+Added Pin To Net: NetName=3V3 Pin=JP1-2
+Added Pin To Net: NetName=GND Pin=JP1-5
+Added Pin To Net: NetName=GND Pin=JP1-6
+Change Net Name : Old Net Name=NetR5_1 New Net Name=BOOT0
+Added Pin To Net: NetName=BOOT1 Pin=R7-2
+Added Pin To Net: NetName=BOOT1 Pin=U1-20
+Added Net: Name=BOOT1
+Added Pin To Net: NetName=NetJP1_3 Pin=JP1-3
+Added Pin To Net: NetName=NetJP1_3 Pin=R6-2
+Added Net: Name=NetJP1_3
+Added Pin To Net: NetName=NetJP1_4 Pin=JP1-4
+Added Pin To Net: NetName=NetJP1_4 Pin=R7-1
+Added Net: Name=NetJP1_4
+Added Member To Class: ClassName=Beacon_V1 Member=Component JP1 Connector 3x2
+Added Member To Class: ClassName=Beacon_V1 Member=Component JP2 Connector 12x2
+Added Member To Class: ClassName=Beacon_V1 Member=Component R7 10k

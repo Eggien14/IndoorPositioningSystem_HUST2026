@@ -1,0 +1,83 @@
+Added Component: Designator=JP1(JP12X2_2)
+Add component (AddParameter): Name = "Value"; Value = "Connector 12x2"; VariantName = "[No Variations]"
+Added Component: Designator=U1(XCVR_DWM1000)
+Add component (AddParameter): Name = "Availability"; Value = "Unavailable"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "MF"; Value = "Decawave Limited"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "MP"; Value = "DWM1000"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Package"; Value = "Module Decawave"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Price"; Value = "None"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "SnapEDA_Link"; Value = "https://www.snapeda.com/parts/DWM1000/Decawave%20Limited/view-part/327593/?ref=snap"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Value"; Value = ""; VariantName = "[No Variations]"
+Added Pin To Net: NetName=CLK Pin=JP1-22
+Added Pin To Net: NetName=CLK Pin=U1-20
+Added Net: Name=CLK
+Added Pin To Net: NetName=CS Pin=JP1-19
+Added Pin To Net: NetName=CS Pin=U1-17
+Added Net: Name=CS
+Added Pin To Net: NetName=EXTON Pin=JP1-2
+Added Pin To Net: NetName=EXTON Pin=U1-1
+Added Net: Name=EXTON
+Added Pin To Net: NetName=GP0 Pin=JP1-17
+Added Pin To Net: NetName=GP0 Pin=U1-15
+Added Net: Name=GP0
+Added Pin To Net: NetName=GP1 Pin=JP1-10
+Added Pin To Net: NetName=GP1 Pin=U1-14
+Added Net: Name=GP1
+Added Pin To Net: NetName=GP2 Pin=JP1-9
+Added Pin To Net: NetName=GP2 Pin=U1-13
+Added Net: Name=GP2
+Added Pin To Net: NetName=GP3 Pin=JP1-8
+Added Pin To Net: NetName=GP3 Pin=U1-12
+Added Net: Name=GP3
+Added Pin To Net: NetName=GP4 Pin=JP1-7
+Added Pin To Net: NetName=GP4 Pin=U1-11
+Added Net: Name=GP4
+Added Pin To Net: NetName=GP5 Pin=JP1-6
+Added Pin To Net: NetName=GP5 Pin=U1-10
+Added Net: Name=GP5
+Added Pin To Net: NetName=GP6 Pin=JP1-5
+Added Pin To Net: NetName=GP6 Pin=U1-9
+Added Net: Name=GP6
+Added Pin To Net: NetName=IRQ/GP8 Pin=JP1-11
+Added Pin To Net: NetName=IRQ/GP8 Pin=U1-22
+Added Net: Name=IRQ/GP8
+Added Pin To Net: NetName=MISO Pin=JP1-21
+Added Pin To Net: NetName=MISO Pin=U1-19
+Added Net: Name=MISO
+Added Pin To Net: NetName=MOSI Pin=JP1-20
+Added Pin To Net: NetName=MOSI Pin=U1-18
+Added Net: Name=MOSI
+Added Pin To Net: NetName=RSTn Pin=JP1-1
+Added Pin To Net: NetName=RSTn Pin=U1-3
+Added Net: Name=RSTn
+Added Pin To Net: NetName=SYNC/GP7 Pin=JP1-4
+Added Pin To Net: NetName=SYNC/GP7 Pin=U1-4
+Added Net: Name=SYNC/GP7
+Added Pin To Net: NetName=VDD3v3_1 Pin=JP1-14
+Added Pin To Net: NetName=VDD3v3_1 Pin=U1-6
+Added Net: Name=VDD3v3_1
+Added Pin To Net: NetName=VDD3v3_2 Pin=JP1-15
+Added Pin To Net: NetName=VDD3v3_2 Pin=U1-7
+Added Net: Name=VDD3v3_2
+Added Pin To Net: NetName=VDDAON Pin=JP1-13
+Added Pin To Net: NetName=VDDAON Pin=U1-5
+Added Net: Name=VDDAON
+Added Pin To Net: NetName=VSS_1 Pin=JP1-16
+Added Pin To Net: NetName=VSS_1 Pin=U1-8
+Added Net: Name=VSS_1
+Added Pin To Net: NetName=VSS_2 Pin=JP1-18
+Added Pin To Net: NetName=VSS_2 Pin=U1-16
+Added Net: Name=VSS_2
+Added Pin To Net: NetName=VSS_3 Pin=JP1-23
+Added Pin To Net: NetName=VSS_3 Pin=U1-21
+Added Net: Name=VSS_3
+Added Pin To Net: NetName=VSS_4 Pin=JP1-24
+Added Pin To Net: NetName=VSS_4 Pin=U1-23
+Added Net: Name=VSS_4
+Added Pin To Net: NetName=VSS_5 Pin=JP1-12
+Added Pin To Net: NetName=VSS_5 Pin=U1-24
+Added Net: Name=VSS_5
+Added Pin To Net: NetName=WAKEUP Pin=JP1-3
+Added Pin To Net: NetName=WAKEUP Pin=U1-2
+Added Net: Name=WAKEUP
+Added Class: Name=V2

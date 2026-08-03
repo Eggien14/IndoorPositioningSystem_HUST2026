@@ -1,0 +1,20 @@
+----------------------------------------------------------------------------------------------------------------------------------
+NCDrill File Report For: RSSI_Tag_V1.PcbDoc   3/21/2026  1:45:12 PM
+----------------------------------------------------------------------------------------------------------------------------------
+
+Layer Pair : Top Layer to Bottom Layer
+ASCII RoundHoles File : RSSI_Tag_V1.TXT
+
+Tool       Hole Size               Hole Tolerance               Hole Type       Hole Count   Plated         Tool Travel
+----------------------------------------------------------------------------------------------------------------------------------
+T1      0.25mm (10mil)                                            Round             2         PTH        1.40mm (0.06inch)
+T2      0.3mm (12mil)                                             Round             34        PTH        140.18mm (5.52inch)
+T3      0.4mm (16mil)                                             Round             20        PTH        188.39mm (7.42inch)
+T4      0.5mm (20mil)                                             Round             2         PTH        12.83mm (0.51inch)
+T5      0.55mm (22mil)                                            Round             2         PTH        66.54mm (2.62inch)
+T6      1mm (39mil)                                               Round             9         PTH        136.90mm (5.39inch)
+T7      1.02mm (40mil)                                            Round             47        PTH        384.55mm (15.14inch)
+----------------------------------------------------------------------------------------------------------------------------------
+Totals                                                                              116
+
+Total Processing Time (hh:mm:ss) : 00:00:00

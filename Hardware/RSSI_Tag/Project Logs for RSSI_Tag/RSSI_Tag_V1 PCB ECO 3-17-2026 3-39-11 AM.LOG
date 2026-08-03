@@ -1,0 +1,5 @@
+Removed Pin From Net: NetName=O_3V3 Pin=jp_1-1
+Removed Pin From Net: NetName=3V3 Pin=jp_1-2
+Change Component Designator: OldDesignator=Battery NewDesignator=Battery1
+Added Pin To Net: NetName=3V3 Pin=jp_1-1
+Added Pin To Net: NetName=O_3V3 Pin=jp_1-2

@@ -1,0 +1,4 @@
+Added Component: Designator=jp_2(JP_1x2)
+Added Pin To Net: NetName=3V3 Pin=jp_2-1
+Added Pin To Net: NetName=O_3V3 Pin=jp_2-2
+Added Member To Class: ClassName=RSSI_Tag_V1 Member=Component jp_2 SW_POWER

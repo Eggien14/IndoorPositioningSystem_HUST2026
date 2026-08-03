@@ -1,0 +1,5 @@
+Change Component Designator: OldDesignator=Pin1 NewDesignator=Battery1
+Change Component Designator: OldDesignator=Pin2 NewDesignator=Battery2
+Change Component Designator: OldDesignator=SW NewDesignator=jp_1
+Added Pin To Net: NetName=GND Pin=C10-1
+Added Pin To Net: NetName=GND Pin=C19-1

@@ -1,0 +1,4 @@
+Change Component Description : Designator=BT1 Old Description=SMT Polarized Battery Holder for 18650 Battery New Description=SMT Polarized Battery Holder for 18650 Battery | Keystone Electronics 1042P
+Added Pin To Net: NetName=GND Pin=C8-1
+Added Pin To Net: NetName=GND Pin=C11-1
+Added Member To Class: ClassName=Beacon_V2 Member=Component JP2 Connector 12x2

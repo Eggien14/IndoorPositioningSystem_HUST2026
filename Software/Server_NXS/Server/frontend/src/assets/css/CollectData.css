@@ -1,0 +1,117 @@
+/* CLASS Khung nút nhấn và text kế thừa từ RealtimeMonitor.css */
+/* Nút nhấn */
+.btn-run-model {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+}
+.btn-run-model:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(59, 130, 246, 0.5);
+  background: linear-gradient(135deg, #60a5fa, #2563eb);
+}
+.btn-run-model:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+.btn-run-model:disabled {
+  background: #64748b;
+  cursor: not-allowed;
+  opacity: 0.8;
+  box-shadow: none;
+}
+.spin {
+  animation: cd-spin 1s linear infinite;
+}
+@keyframes cd-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* Thông báo  */
+.cd-notification-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  animation: cd-fadeIn 0.3s ease-in-out;
+}
+@keyframes cd-fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.cd-notification-processing {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.cd-notification-success {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.cd-notification-error {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.success-message {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.rm-action-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.map-cell.collected {
+  background-color: rgba(16, 185, 129, 0.4) !important; 
+  border: 1px solid #10b981 !important;
+}
+/* CÁC CLASS VẼ MAP KẾ THỪA TỪ MapEditor.css */
+
+/* POP-UP COLLECT DATA*/
+/* Các class khác kế thừa từ LoginModal.css */
+.label-form {
+  text-align: left;
+  margin-bottom: 8px;
+}
+.label-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  display: block;
+  margin-bottom: 8px;
+}
+

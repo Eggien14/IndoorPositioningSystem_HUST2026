@@ -1,0 +1,7 @@
+Added Component: Designator=IMU_IN1(BNO055_Internal)
+Added Pin To Net: NetName=3V3 Pin=IMU_IN1-2
+Added Pin To Net: NetName=GND Pin=IMU_IN1-3
+Added Pin To Net: NetName=SDA Pin=IMU_IN1-4
+Added Pin To Net: NetName=SCL Pin=IMU_IN1-5
+Added Pin To Net: NetName=3V3 Pin=IMU_IN1-7
+Added Member To Class: ClassName=RSSI_Tag_V1 Member=Component IMU_IN1 BNO055

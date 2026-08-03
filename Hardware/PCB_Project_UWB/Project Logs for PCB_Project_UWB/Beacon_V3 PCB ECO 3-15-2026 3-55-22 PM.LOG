@@ -1,0 +1,22 @@
+Removed Pin From Net: NetName=3V3 Pin=C1-1
+Removed Pin From Net: NetName=GND Pin=C1-2
+Removed Pin From Net: NetName=GND Pin=P2-1
+Removed Pin From Net: NetName=SWCLK Pin=P2-2
+Removed Pin From Net: NetName=SWIO Pin=P2-3
+Removed Pin From Net: NetName=3V3 Pin=P2-4
+Added Pin To Net: NetName=GND Pin=C1-1
+Added Pin To Net: NetName=3V3 Pin=C1-2
+Added Pin To Net: NetName=3V3 Pin=P2-1
+Added Pin To Net: NetName=SWIO Pin=P2-2
+Added Pin To Net: NetName=SWCLK Pin=P2-3
+Added Pin To Net: NetName=GND Pin=P2-4
+Added Member To Class: ClassName=Beacon_V2 Member=Component C7 0.1uF
+Added Member To Class: ClassName=Beacon_V2 Member=Component C15 47uF
+Added Member To Class: ClassName=Beacon_V2 Member=Component C16 0.1uF
+Added Member To Class: ClassName=Beacon_V2 Member=Component C17 0.1uF
+Added Member To Class: ClassName=Beacon_V2 Member=Component C19 10uF
+Added Member To Class: ClassName=Beacon_V2 Member=Component C21 10uF
+Added Member To Class: ClassName=Beacon_V2 Member=Component R9 1k
+Added Member To Class: ClassName=Beacon_V2 Member=Component R10 10k
+Added Member To Class: ClassName=Beacon_V2 Member=Component R12 1k
+Added Member To Class: ClassName=Beacon_V2 Member=Component U4 AP2112K-3.3TRG1

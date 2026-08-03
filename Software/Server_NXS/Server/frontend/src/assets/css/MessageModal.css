@@ -1,0 +1,128 @@
+.msg-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999999; /* Đảm bảo nổi lên trên mọi thứ */
+  animation: fadeInMsg 0.2s ease-out;
+}
+
+.msg-modal-content {
+  background: #ffffff;
+  width: 380px;
+  border-radius: 24px;
+  padding: 30px 24px 24px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  animation: scaleUpMsg 0.2s ease-out;
+}
+
+.msg-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.msg-modal-close:hover {
+  color: #0f172a;
+}
+.msg-modal-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  transition: all 0.3s ease;
+}
+.msg-modal-icon.warning {
+  background: #3b82f6;
+  box-shadow: 0 0 0 8px #eff6ff;
+}
+.msg-modal-icon.success {
+  background: #10b981;
+  box-shadow: 0 0 0 8px #d1fae5;
+}
+.msg-modal-icon.error {
+  background: #ef4444;
+  box-shadow: 0 0 0 8px #fee2e2;
+}
+.msg-modal-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 10px 0;
+}
+
+.msg-modal-desc {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0 0 30px 0;
+  line-height: 1.5;
+}
+
+.msg-modal-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-msg-cancel,
+.btn-msg-confirm {
+  flex: 1;
+  padding: 12px 0;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-msg-cancel {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+}
+
+.btn-msg-cancel:hover {
+  background: #f8fafc;
+}
+
+.btn-msg-confirm {
+  background: #0f172a;
+  border: 1px solid #0f172a;
+  color: #ffffff;
+}
+
+.btn-msg-confirm:hover {
+  background: #1e293b;
+}
+
+@keyframes fadeInMsg {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleUpMsg {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

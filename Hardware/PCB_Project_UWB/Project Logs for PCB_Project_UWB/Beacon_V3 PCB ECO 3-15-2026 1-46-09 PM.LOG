@@ -1,0 +1,30 @@
+Removed Member From Class: ClassName=Beacon_V2 Member=C?
+Removed Member From Class: ClassName=Beacon_V2 Member=R?
+Removed Member From Class: ClassName=Beacon_V2 Member=U?
+Change Component Designator: OldDesignator=C6 NewDesignator=C7
+Change Component Designator: OldDesignator=C7 NewDesignator=C6
+Change Component Designator: OldDesignator=C15 NewDesignator=C20
+Change Component Designator: OldDesignator=C16 NewDesignator=C21
+Change Component Designator: OldDesignator=C17 NewDesignator=C18
+Change Component Designator: OldDesignator=C18 NewDesignator=C19
+Change Component Designator: OldDesignator=C19 NewDesignator=C22
+Change Component Designator: OldDesignator=C20 NewDesignator=C23
+Change Component Designator: OldDesignator=C21 NewDesignator=C24
+Change Component Designator: OldDesignator=C? NewDesignator=C15
+Change Component Designator: OldDesignator=C? NewDesignator=C16
+Change Component Designator: OldDesignator=C? NewDesignator=C17
+Change Component Designator: OldDesignator=R9 NewDesignator=R10
+Change Component Designator: OldDesignator=R10 NewDesignator=R11
+Change Component Designator: OldDesignator=R11 NewDesignator=R12
+Change Component Designator: OldDesignator=R12 NewDesignator=R13
+Change Component Designator: OldDesignator=R13 NewDesignator=R14
+Change Component Designator: OldDesignator=R? NewDesignator=R9
+Change Component Designator: OldDesignator=U4 NewDesignator=U5
+Change Component Designator: OldDesignator=U? NewDesignator=U4
+Change Component Description : Designator=BT1 Old Description=SMT Polarized Battery Holder for 18650 Battery New Description=SMT Polarized Battery Holder for 18650 Battery | Keystone Electronics 1042P
+Change Net Name : Old Net Name=NetR?_2 New Net Name=NetR9_2
+Added Member To Class: ClassName=Beacon_V2 Member=Component C22 10uF
+Added Member To Class: ClassName=Beacon_V2 Member=Component C23 10uF
+Added Member To Class: ClassName=Beacon_V2 Member=Component C24 0.1uF
+Added Member To Class: ClassName=Beacon_V2 Member=Component R14 1k
+Added Member To Class: ClassName=Beacon_V2 Member=Component U5 ESP32_WROOM_32U

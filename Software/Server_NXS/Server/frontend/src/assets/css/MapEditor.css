@@ -1,0 +1,498 @@
+/* Bố cục Split Layout (2 cột) */
+.map-editor {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  max-width: 1350px;
+  margin: 0 auto;
+}
+/* CỘT TRÁI: THANH CÔNG CỤ */
+.map-sidebar {
+  width: 320px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.map-title {
+  color: rgb(0, 0, 0);
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+.sidebar-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.input-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #86868b;
+}
+.input-field {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #d2d2d7;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+  transition: all 0.2s;
+  width: 100%;
+  margin-bottom: 15px;
+}
+.input-field:focus {
+  outline: none;
+  border-color: #0071e3;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
+}
+.sidebar-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.btn-clear {
+  flex: 1;
+  background: #f5f5f7;
+  color: #1d1d1f;
+  border: 1px solid transparent;
+  padding: 10px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.btn-clear:hover:not(:disabled) {
+  background: #e8e8ed;
+}
+.btn-clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-gray {
+  flex: 1;
+  background: #f5f5f7;
+  color: #1d1d1f;
+  border: 1px solid transparent;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.btn-gray:hover:not(:disabled) {
+  background: #e8e8ed;
+}
+.btn-gray:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* Bảng thống kê */
+.sidebar-stats {
+  background: #f5f5f7;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #515154;
+}
+.sidebar-footer {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+.btn-blue {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+}
+.btn-blue:hover:not(:disabled) {
+  box-shadow: 0 6px 12px rgba(59, 130, 246, 0.5);
+  background: linear-gradient(135deg, #60a5fa, #2563eb);
+}
+.btn-blue:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+.btn-blue:disabled {
+  background: #64748b;
+  cursor: not-allowed;
+  opacity: 0.8;
+  box-shadow: none;
+}
+.btn-pink {
+  flex: 1;
+  background: #fef2f2;
+  color: #ef4444;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+/* --- CỘT PHẢI: QUẢN LÝ BEACON UWB --- */
+.map-right-panel {
+  width: 280px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: 0px;
+}
+
+/* Ghi đè max-height để danh sách dài ra, cuộn thoải mái hơn */
+.map-right-panel .beacon-list-container {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* Panel chứa danh sách Beacon */
+.beacon-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.beacon-list-title {
+  font-size: 14px;
+  color: #475569;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+.beacon-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+.beacon-chip {
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 12px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+.beacon-info {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  color: #64748b;
+}
+.beacon-info b {
+  color: #0f172a;
+}
+/* Khung chứa các nút Action */
+.beacon-actions {
+  display: flex;
+  gap: 6px;
+}
+.btn-delete-small {
+  background: #fee2e2;
+  color: #ef4444;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s ease;
+}
+.btn-edit-small {
+  background: #e0f2fe;
+  color: #0284c7;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s ease;
+}
+/* CỘT PHẢI: BẢN ĐỒ */
+.map-canvas {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+/* Công tắc Segmented Control */
+.segmented-control {
+  display: inline-flex;
+  background: rgba(118, 118, 128, 0.12); /* Nền xám mờ đặc trưng iOS */
+  padding: 3px;
+  border-radius: 999px;
+}
+.segment-btn {
+  background: transparent;
+  border: none;
+  padding: 8px 24px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.2, 0, 0, 1);
+}
+.segment-btn.active {
+  background: #ffffff;
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.12),
+    0 3px 1px rgba(0, 0, 0, 0.04);
+}
+/* Khung map */
+.map-grid-section {
+  --cell-size: 38px;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto auto;
+  gap: 0;
+  width: fit-content;
+  margin: 2.5px auto 0 auto;
+  max-width: 100%;
+  overflow-x: auto;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 24px;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  padding: 40px 40px 16px 20px;
+}
+.corner-empty {
+  grid-column: 1;
+  grid-row: 3;
+}
+/* Lưới map */
+.map-grid {
+  grid-column: 2;
+  grid-row: 2;
+  display: grid;
+  padding: 0;
+  background: transparent;
+  border-left: 1px solid #cbd5e1;
+  border-top: 1px solid #cbd5e1;
+  max-height: none;
+  position: relative;
+}
+/* Vẽ trục Oy */
+.map-grid::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: -20px;
+  bottom: -20px;
+  width: 2px;
+  background-color: #64748b;
+  z-index: 10;
+}
+/* Vẽ trục Ox */
+.map-grid::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: -20px;
+  right: -20px;
+  height: 2px;
+  background-color: #64748b;
+  z-index: 10;
+}
+/* Vẽ các số trong trục tọa độ*/
+.x-axis-container {
+  grid-column: 2;
+  grid-row: 3;
+  margin-top: 11px;
+}
+.y-axis-container {
+  grid-column: 1;
+  grid-row: 2;
+  margin-right: 11px;
+}
+.axis-label-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.axis-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+}
+.axis-tick-x {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 6px;
+  background-color: #94a3b8;
+  border-radius: 2px;
+}
+.axis-tick-y {
+  position: absolute;
+  right: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 2px;
+  background-color: #94a3b8;
+  border-radius: 2px;
+}
+/* Vẽ các ô trong lưới */
+.map-cell {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  position: relative;
+  border-right: 1px solid #cbd5e1;
+  border-bottom: 1px solid #cbd5e1;
+  border-top: none;
+  border-left: none;
+  border-radius: 0 !important;
+  background: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+.map-cell::after {
+  display: none !important;
+}
+.map-cell:hover {
+  background: rgba(124, 58, 237, 0.15);
+  transform: none !important; /* Không phình to để giữ nguyên form lưới */
+}
+.map-cell.blocked {
+  background-color: #f1f5f9;
+  background-image: repeating-linear-gradient(
+    45deg,
+    #cbd5e1 0,
+    #cbd5e1 1px,
+    transparent 1px,
+    transparent 6px
+  );
+  box-shadow: inset 0 0 0 1px #cbd5e1;
+  border-radius: 0 !important;
+}
+.map-cell.router-cell {
+  border: 2px solid #10b981;
+}
+.map-cell.preview {
+  opacity: 0.8;
+  box-shadow: inset 0 0 0 2px var(--primary-500);
+  transform: none !important;
+}
+.router-icon {
+  font-size: 18px;
+  pointer-events: none;
+}
+/* VẼ BEACON VỚI MODE UWB */
+.beacon-dot-wrapper {
+  position: absolute;
+  z-index: 100;
+  pointer-events: none;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.beacon-dot {
+  width: 12px;
+  height: 12px;
+  background: #ef4444;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+.beacon-number-label {
+  position: absolute;
+  top: 100%;
+  margin-top: 4px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+/* POP UP CONFIG BEACON UWB */
+/* Các class khác kế thừa từ LoginModal.css */
+.two-column-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.btn-popup-actions {
+  display: flex;
+  gap: 10px;
+}
+.btn-confirm {
+  background: #0f172a;
+  color: #fff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+}
+.btn-confirm:hover {
+  background: #202b38;
+}

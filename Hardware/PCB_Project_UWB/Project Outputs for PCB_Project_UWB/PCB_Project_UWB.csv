@@ -1,0 +1,27 @@
+Comment,Description,Designator,Footprint,LibRef,Quantity
+,,,,,
+TP4056_charger,Module,*1,TP4056_charger,TP4056_charger,4
+Pin 18650,,,,,4
+1042P,SMT Polarized Battery Holder for 18650 Battery,BT1,BAT_1042P,1042P,4
+10uF,T? dán,"C1, C11, C12",Capacitor_0805,Capacitor_0805,20
+0.1uF,T? dán,"C2, C3, C5, C6, C7, C8, C9, C10",Capacitor_0805,Capacitor_0805,40
+47uF,T? dán,C4,Capacitor_0805,Capacitor_0805,10
+20pF,T? dán,"C13, C14, C15, C16",Capacitor_0805,Capacitor_0805,20
+Header3,"Header, 3-Pin",Header3,HDR/Header/3/BOX,Header 3,5
+Header4,"Header, 4-Pin",Header4,HDR/Header/4/BOX,Header 4_1,5
+NCP1117ST33T3G,SOT223,IC1,SOT223-3_ONS,NCP1117ST33T3G,6
+Jac DC,Jac DC input,JDC1,DC-IN,DCIN,5
+Connector 3x2,Jumper 3x2,JP1,JP3x2,JP3x2,5
+Led,Dán,,??,,10
+Led,Dán,"LED1, LED2",Led 0805 Blue,Led,10
+1k,Dán,"R1, R3, R4",tro smd 0805,Tro 0805 1% 1k,20
+10k,Dán,"R2, R6, R7",tro smd 0805,Tro 0805 1% 10k,20
+1M,Dán,R5,tro smd 0805,Tro 0805 1% 1M,20
+JP_1x2,,SW,JP_1x2,JP_1x2,6
+SW2,Switch button 2 pin,SW1,SW1-SMD,SW2,6
+STM32F103C8T6,"STM32 ARM-based 32-bit MCU with ARM 32-bit Cortex-M3 Microcontroller, 128 Kbytes Flash, 48-pin LQFP, Industrial Temperature",U1,LQFP48,STM32F103C8T6,6
+AP2112K-3.3TRG1,Linear Voltage Regulator IC Positive Fixed 1 Output 600mA SOT-25,U2,SOT95P285X140-5N,AP2112K-3.3TRG1,6
+Connector 12x2,Jumper cái 12x2,UWB,JP12X2_1,JP12x2,5
+ABS07,Th?ch anh dán 32k,Y1,ABS07,ABS07,5
+8Mhz,Th?ch anh dán 8Mhz,Y2,Thach Anh 2 chan SMD5032,Thach Anh 2 chan SMD 5032,5
+jump noi tat ,,,,,10

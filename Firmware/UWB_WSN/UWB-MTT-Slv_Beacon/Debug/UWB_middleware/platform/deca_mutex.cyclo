@@ -1,0 +1,2 @@
+../UWB_middleware/platform/deca_mutex.c:65:17:decamutexon	1
+../UWB_middleware/platform/deca_mutex.c:95:6:decamutexoff	2

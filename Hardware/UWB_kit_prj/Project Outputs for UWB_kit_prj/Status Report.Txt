@@ -1,0 +1,12 @@
+Output: NC Drill Files
+Type  : NC Drill
+From  : Project [UWB_kit_prj.PrjPcb]
+   Generated File[V2.TXT]
+   Generated File[V2.LDP]
+   Generated File[V2.DRR]
+
+
+Files Generated   : 3
+Documents Printed : 0
+
+Finished Output Generation At 7:54:53 AM On 11/1/2025

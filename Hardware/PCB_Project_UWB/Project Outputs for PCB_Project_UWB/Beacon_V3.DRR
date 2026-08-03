@@ -1,0 +1,24 @@
+----------------------------------------------------------------------------------------------------------------------------------
+NCDrill File Report For: Beacon_V3.PcbDoc   3/16/2026  12:51:01 PM
+----------------------------------------------------------------------------------------------------------------------------------
+
+Layer Pair : Top Layer to Bottom Layer
+ASCII RoundHoles File : Beacon_V3-RoundHoles.TXT
+ASCII SlotHoles File : Beacon_V3-SlotHoles.TXT
+
+Tool       Hole Size               Hole Tolerance               Hole Type       Hole Count   Plated         Tool Travel
+----------------------------------------------------------------------------------------------------------------------------------
+T1      0.25mm (10mil)                                            Round             12        PTH        12.53mm (0.49inch)
+T2      0.3mm (12mil)                                             Round             12        PTH        162.79mm (6.41inch)
+T3      0.5mm (20mil)                                             Round             5         PTH        71.27mm (2.81inch)
+T4      0.55mm (22mil)                                            Round             2         PTH        37.27mm (1.47inch)
+T5      0.914mm (36mil)                                           Round             30        PTH        118.27mm (4.66inch)
+T6      1mm (39mil)                                               Round             10        PTH        114.94mm (4.53inch)
+T7      1.02mm (40mil)                                            Round             8         PTH        86.18mm (3.39inch)
+T8      1.27mm (50mil)                                            Slot              3         PTH        29.20mm (1.15inch)
+T9      2.39mm (94mil)                                            Round             1         NPTH       0.00mm (0.00inch)
+T10     3.45mm (136mil)                                           Round             2         NPTH       57.47mm (2.26inch)
+----------------------------------------------------------------------------------------------------------------------------------
+Totals                                                                              85
+
+Total Processing Time (hh:mm:ss) : 00:00:00
